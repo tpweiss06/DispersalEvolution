@@ -1,51 +1,85 @@
-# This script contains all of the functions necessary to run a simulation of
-#    population evolution and movement in response to climate change. The 
-#    functions are organized into three different categories: biological,
-#    bookkeeping, and environmental. Each function is documented with a brief
-#    description of the purpose of the function and a list and definition of 
-#    the necessary function arguments before the function definition itself.
-#    Each broad category of functions is delineated by the dashed section
-#    headers and each individual function begins with a single line of 6 pound
-#    signs (######)
-
+# This script contains functions necessary to simulate a single realization
+#    of the Dispersal Evolution IBM. Each function is documented with the 
+#    necessary arguments and corresponding output. Functions are sorted into
+#    three categories: biological, environmental, and book keeping.
 
 # ------------------------------------------------------------------------------
 # ---------------------------- Biological Functions ----------------------------
 # ------------------------------------------------------------------------------
 
-###### CalcTraits
-# This function will calculate the fitness and dispersal trait values for a set 
-#    of individuals based on their alleles
+###### DispPhen
+# This function calculates the dispersal phenotype for a set of individuals in
+#    the simulated population.
 ### INPUTS
-# population:  A vector of the population (i.e. row numbers) for which to 
-#                   calculate a trait values.
 # PopMat:      The population matrix to use
 # PopSize:     The size of the current population
 # PopIndices: Column indices to use for the population matrix
+# Haploid: A boolean indicator of haploid (1) or diploid (0) genetics
+# NumLoc: The number of loci defining dispersal
+# dmax: The maximum expected dispersal distance (in units of discrete patches)
+# eta: The dimensions of each discrete patch in Cartesian space
+# rho: Determines the slope of the transition from 0 to dmax as the loci sum
+#         changes
 ### OUTPUTS
-# The function will create a matrix with three columns. The first column will 
-#    correspond to the ID (row number) of the individual, the second column
-#    will be the fitness trait value, and the third column will be the dispersal
-#    trait. If the traits are calculated for the entire population, as will 
-#    normally be the case, then the first column will simply correspond to the 
-#    row number, but including this column allows for the calculation of 
-#    traits for a subset of the current population.
-CalcTraits <- function(population, PopMat, PopSize, PopIndices){
-     # First create an empty matrix for the trait values and put
-     #    the population IDs in the first column
-     traits <- matrix(NA, nrow = PopSize, ncol = 3)
-     traits[,1] <- population
-     
-     # Now calculate the sum of each individual's quantitative loci for each 
-     #    trait and return those sums in the traits matrix
-     if(PopSize > 1){
-          traits[,2] <- rowSums(PopMat[population, PopIndices$FitCols])
-          traits[,3] <- rowSums(PopMat[population, PopIndices$DispCols])
+# A vector of length PopSize with the i-th entry corresponding to the dispersal
+#    phenotype of the i-th individual in the population input
+DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, NumLoc,
+                     dmax, eta, rho){
+     # Calculate the sum of the quantitative loci defining dispersal for
+     #    each individual, accounting for the different possible cases
+     if(PopSize == 1){
+          LociSums <- sum(PopMat[,PopIndices$DispCols])
      } else{
-          traits[,2] <- sum(PopMat[population, PopIndices$FitCols])
-          traits[,3] <- sum(PopMat[population, PopIndices$DispCols])
+          if((Haploid == 1) & (NumLoc == 1)){
+               LociSums <- PopMat[,PopIndices$DispCols]
+          } else{
+               LociSums <- rowSums(PopMat[,PopIndices$DispCols])
+          }
      }
-     return(traits)
+     # Now calculate the expected dispersal distance for each individual
+     d <- (dmax * eta * exp(rho * LociSums)) / (1 + exp(rho * LociSums))
+     return(d)
+}
+
+###### Dispersal
+# Using the dispersal phenotypes from the above function, this function will
+#    implement dispersal according to one of three different kernels and return
+#    the realized changes in patch number in the x and y dimensions.
+### INPUTS:
+# d:           The dispersal phenotypes
+# width:       The number of patches spanning the y dimension of the landscape
+# kern:        The dispersal kernel to be used. Can be "norm", "exp", or 
+#                   "stud_t"
+# angles:      A large vector of random numbers previously generated
+# AngleIndex:  Index of the where to look within the vector of random numbers
+# PopIndices, PopSize, PopMat, eta, rho, and dmax:  As previously defined
+### OUTPUTS:
+# The function will return a matrix with 2 columns and as many rows as individuals
+#    within the population. Each row will correspond to the post dispersal 
+#    change in patch number for X and Y dimensions in that order.
+Disperse <- function(d, width, kern, eta, angles, AngleIndex, rho,
+                     PopSize, PopIndices, PopMat, dmax){
+     # Generate the dispersal distances according to the type of kernel
+     if(kern == "norm"){
+          sigma <- (d^2 * pi) / 2
+          dists <- abs(rnorm(n = PopSize, mean = 0, sd = sigma))
+     } else if(kern == "exp"){
+          dists <- rexp(n = PopSize, rate = 1 / d)
+     } else if(kern == "stud_t"){
+          dists <- rStudKern(n = PopSize, d = d)
+     }
+     
+     # Calculate the new x and y coordinates of each individual as if the 
+     #    center of their current patch is the origin
+     NewX <- dists * cos(angles[AngleIndex:(AngleIndex + PopSize - 1)])
+     NewY <- dists * sin(angles[AngleIndex:(AngleIndex + PopSize - 1)])
+     
+     # Use the eta parameter to determine the number of x and y
+     #    patches changed, accounting for movement occuring from the
+     #    center by adding or subtracting eta/2 as necessary
+     DeltaX <- ifelse(NewX < 0, ceiling((NewX - eta/2) / eta), floor((NewX + eta/2) / eta))
+     DeltaY <- ifelse(NewY < 0, ceiling((NewY - eta/2) / eta), floor((NewY + eta/2) / eta))
+     return(cbind(DeltaX,DeltaY))
 }
 
 ###### rStudKern
@@ -69,96 +103,78 @@ rStudKern <- function(n, d){
      return(StudKernVals)
 }
 
-###### Disperse
-# This function will use the previously calculated dispersal traits to calculate
-#    new, post dispersal locations for individuals according to any of three
-#    potential dispersal kernels: normal, exponential, or student's t dispersal
-#    kernel (Shaw 2014).
-### INPUTS:
-# traits:      The three column matrix created by the CalcTrait function
-# width:       The number of discrete cells defining the width of the word
-#                   being simulated
-# kern:        The dispersal kernel to be used. Can be "norm", "exp", or 
-#                   "stud_t"
-# eta:  A constant value determining the width of individual patches on
-#                   the Cartesian coordinate system defining both
-#                   environmental quality and dispersal kernels.
-# angles:      a large vector of random numbers generated before calling the function
-# AngleIndex:  the index of the where to look within the vector
-# PopIndices:  A list containing all the index values for different columns in
-#                   the matrix
-# NumRands: An integer denoting how many random numbers to generate at a time for
-#              the random number vectors.
-# rho: parameter determining the slope of the change from 0 to dmax in expected
-#         dispersal distance
-# dmax:   the maximum possible expected dispersal distance (in terms of number
-#         of patches). Actual dispersal distance can obviously exceed this as it
-#         is drawn from a distribution.
-### OUTPUTS:
-# The function will update objects in the Population matrix in the parent environment
-#    and then return the updated value of AngleIndex
-Disperse <- function(traits, width, kern, eta, angles, AngleIndex, rho,
-                     CurPop, PopSize, PopIndices, NumRands, PopMat, dmax){
-     # First calculate the expected dispersal distance for each individual
-     d <- (dmax * eta * exp(rho * traits[CurPop,3])) / (1 + exp(rho * traits[CurPop,3]))
-     
-     # Next generate the dispersal distances according to the type of kernel
-     if(kern == "norm"){
-          sigma <- (d^2 * pi) / 2
-          dists <- abs(rnorm(n = PopSize, mean = 0, sd = sigma))
-     } else if(kern == "exp"){
-          dists <- rexp(n = PopSize, rate = 1 / d)
-     } else if(kern == "stud_t"){
-          dists <- rStudKern(n = PopSize, d = d)
+###### Reproduce
+Reproduce <- function(beta, gamma, tau, omega, Rmax, Kmax, 
+                      traits, PopMat, EnvGradType, ColumnNames, z = 0.5,
+                      eta, PopIndices, SexRands = NULL, CurPop, Ld, Lf, 
+                      DispSegVals1, DispSegVals2, DispSegIndex, FitSegVals1, FitSegVals2, 
+                      FitSegIndex, FitMutStd, DispMutStd, FitNumMut, DispNumMut, OffspringIndex, 
+                      FitLocusVec, DispLocusVec, NumCols, FitPerLocusProb, DispPerLocusProb, NumRands,
+                      OccPatches, RelFits){
+     (R, OccPatches, RangeParams) ### Need to replace RangeParams with necessary objects
+     # Check that Rmax is within the proper range
+     if(R < 1){
+          write("R values less than 1 will result in negative alpha values, causing unrestricted population growth",
+                stderr())
+          return(NULL)
+     } else if(R == 1){
+          write("Setting R to 1 results in alpha values of either 0 or NaN, resulting in unrestricted growth or errors respectively",
+                stderr())
+          return(NULL)
      }
      
-     # Now calculate the new x and y coordinates of each individual as if their
-     #    current location is the origin
-     NewX <- dists * cos(angles[AngleIndex:(AngleIndex + PopSize - 1)])
-     NewY <- dists * sin(angles[AngleIndex:(AngleIndex + PopSize - 1)])
+     # Determine the number of occupied patches 
+     NumPatches <- nrow(OccPatches)
+     # Get the patch alpha values based on the location within the range
+     Alphas <- CalcPatchK(patches = OccPatches[,1], RangeParams) #### Need to replace with necessary range params
+     # Create an empty object to hold the expected population sizes for the next generation
+     Ntp1 <- rep(NA, NumPatches)
      
-     # Now use the eta parameter to determine the number of x and y
-     #    patches changed, accounting for the movement occuring from the patch
-     #    center by adding or subtracting eta/2 as necessary
-     DeltaX <- ifelse(NewX < 0, ceiling((NewX - eta/2) / eta), floor((NewX + eta/2) / eta))
-     DeltaY <- ifelse(NewY < 0, ceiling((NewY - eta/2) / eta), floor((NewY + eta/2) / eta))
+     # Loop through each occupied patch and calculate the expected population
+     #    size in the next generation
+     for(i in 1:NumPatches){
+          # Extract the local population
+          CurPatchPop <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
+                                     (PopMat[,PopIndices$y1] == OccPatches[i,2]) )
+          PatchPopSize <- length(CurPatchPop)
+          
+          # Now determine the expected population growth according to the stochastic
+          #    Ricker models derived by Melbourne & Hastings (2008) and the 
+          #    simulation parameters
+          if(is.infinite(Alphas[1])){
+               Ntp1[i] <- 0
+          } else{
+               if(Haploid == 1){
+                    Ntp1[i] <- PatchPopSize * R * exp(-1 * Alphas[i] * PatchPopSize)
+               } else{
+                    if(is.null(PopIndices$sex)){
+                         Ntp1[i] <- PatchPopSize * R * exp(-1 * Alphas[i] * PatchPopSize)
+                    } else{
+                         CurFemales <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
+                                                   (PopMat[,PopIndices$y1] == OccPatches[i,2]) &
+                                                   (PopMat[,PopIndices$sex] == 1) )
+                         NumFemales <- length(CurFemales)
+                         AllFemale <- NumFemales == PatchPopSize
+                         Ntp1[i] <- (NumFemales * (R / z) * exp(-1 * Alphas[i] * PatchPopSize)) * (1 - AllFemale)
+                    }
+               }
+          }
+     }
      
-     return(cbind(DeltaX,DeltaY))
+     # Use the expected population sizes to generate the realized population 
+     #    sizes for each patch
+     RealizedNtp1 <- rpois(n = NumPatches, lambda = Ntp1)
+     return(RealizedNtp1)
 }
 
-###### RelFit
-# This function will calculate the relative fitness values for individuals 
-#    depending on their position within the range and their respective phenotype
-#    values.
-### INPUTS
-# lambda:    A value determining the strength of local selection across the
-#                   range. Higher values will correspond to a steeper gradient
-#                   in optimum phenotype values from one end of the range to the
-#                   other.
-# beta:        The beta value used to define the center of the range
-# eta:         The patch size in the model
-# traits:      The trait matrix calculated by the CalcTraits function
-# PopMat:      The population matrix containing the focal individuals
-# individuals: A vector of the individual IDs (row numbers) of the focal 
-#                   individuals.
-# omega:       This parameter is the inverse of the strength of stabilizing 
-#                   selection.
-# PopIndices:  A list containing all the index values for different columns in
-#                   the matrix
-### OUTPUTS
-# This function will generate a vector of relative fitness values for each
-#    individual in the same order they are presented in the phenotype vector.
-RelFit <- function(lambda, beta, traits, PopMat, individuals, omega,
-                   PopIndices, eta){
-     # Calculate the Zopt values for each individual depending on where they
-     #    are in space.
-     Zopt <- lambda * (PopMat[individuals, PopIndices$x1] * eta - beta)
-     
-     # Now, use the equation for stabilizing selection to calculate each
-     #    individual's relative fitness and return that as a vector
-     RelFits <- exp(-1 * (traits[individuals, 2] - Zopt)^2 / (2*omega^2))
-     return(RelFits)
-}
+###### Matfill
+###### Inheritence
+
+
+
+
+
+
 
 ###### MatFill
 # This function will fill in the appropriate values for a new population matrix
@@ -405,87 +421,6 @@ Inheritence <- function(Cols, parents, PopMat, SumNtp1, NumLoci, SegVals1, Allel
 # RelFits:          A vector of relative fitness values
 ### OUTPUTS:
 # The function will return a vector of population sizes for the occupied patches
-Reproduce <- function(beta, gamma, tau, omega, Rmax, Kmax, 
-                      traits, PopMat, EnvGradType, ColumnNames, z = 0.5,
-                      eta, PopIndices, SexRands = NULL, CurPop, Ld, Lf, 
-                      DispSegVals1, DispSegVals2, DispSegIndex, FitSegVals1, FitSegVals2, 
-                      FitSegIndex, FitMutStd, DispMutStd, FitNumMut, DispNumMut, OffspringIndex, 
-                      FitLocusVec, DispLocusVec, NumCols, FitPerLocusProb, DispPerLocusProb, NumRands,
-                      OccPatches, RelFits){
-     # Check that Rmax is non-negative before anything else
-     if(Rmax < 1){
-          write("Rmax values less than 1 will result in negative alpha values, causing unrestricted population growth",
-                stderr())
-          return(NULL)
-     } else if(Rmax == 1){
-          write("Setting Rmax to 1 results in alpha values of either 0 or NaN, resulting in unrestricted growth or errors respectively",
-                stderr())
-     }
-     
-     # Determine the number of occupied patches and get the patch qualities for
-     #    each, then create an object to hold expected population sizes
-     NumPatches <- nrow(OccPatches)
-     PatchEnvQual <- GetEnvQual(beta = beta, gamma = gamma, 
-                                     tau = tau, patches = OccPatches[,1], 
-                                     eta = eta)
-     Ntp1 <- rep(NA, NumPatches)
-     
-     # Loop through each occupied patch and calculate the expected population
-     #    size in the next generation
-     for(i in 1:NumPatches){
-          # Extract the quality of the current patch and the population size
-          PatchQual <- PatchEnvQual[i]
-          CurPatchPop <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
-                                 (PopMat[,PopIndices$y1] == OccPatches[i,2]) )
-          PatchPopSize <- length(CurPatchPop)
-          
-          # Calculate the relevant demographic parameter and return a helpful
-          #    error message if needed
-          if(EnvGradType == "K"){
-               PatchK <- PatchQual * Kmax
-               PatchR <- Rmax
-          } else if(EnvGradType == "R"){
-               PatchR <- PatchQual * Rmax
-               PatchK <- Kmax
-          } else{
-               write("Invalid type of environmental gradient", stderr())
-               return(NULL)
-          }
-          
-          # Calculate the patch alpha value based on the R and K values determined
-          #    above 
-          PatchAlpha <- log(PatchR) / PatchK
-
-          # Now determine the expected population growth according to the stochastic
-          #    Ricker models derived by Melbourne & Hastings (2008) and the sex
-          #    structure of the population
-          if(!is.null(PopIndices$sex)){
-               CurFemales <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
-                                         (PopMat[,PopIndices$y1] == OccPatches[i,2]) &
-                                         (PopMat[,PopIndices$sex] == 1) )
-               PatchFit <- mean(RelFits[CurFemales])
-               NumFemales <- length(CurFemales)
-               if((NumFemales == PatchPopSize) | (NumFemales == 0) | (is.infinite(PatchAlpha))){
-                    Ntp1[i] <- 0
-               } else{
-                    Ntp1[i] <- PatchFit * NumFemales * (PatchR / z) * exp(-1 * PatchAlpha * PatchPopSize)
-               }
-          } else{
-               PatchFit <- mean(RelFits[CurPatchPop])
-               if(is.infinite(PatchAlpha)){
-                    Ntp1[i] <- 0
-               } else{
-                    Ntp1[i] <- PatchFit * PatchPopSize * PatchR * exp(-1 * PatchAlpha * PatchPopSize)
-               }
-          }
-     }
-     
-     # Use the expected population sizes to generate the realized population 
-     #    sizes for each patch
-     RealizedNtp1 <- rpois(n = NumPatches, lambda = Ntp1)
-
-     return(RealizedNtp1)
-}
 
 # ------------------------------------------------------------------------------
 # -------------------------- Environmental Functions ---------------------------
