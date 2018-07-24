@@ -104,14 +104,21 @@ rStudKern <- function(n, d){
 }
 
 ###### Reproduce
-Reproduce <- function(beta, gamma, tau, omega, Rmax, Kmax, 
-                      traits, PopMat, EnvGradType, ColumnNames, z = 0.5,
-                      eta, PopIndices, SexRands = NULL, CurPop, Ld, Lf, 
-                      DispSegVals1, DispSegVals2, DispSegIndex, FitSegVals1, FitSegVals2, 
-                      FitSegIndex, FitMutStd, DispMutStd, FitNumMut, DispNumMut, OffspringIndex, 
-                      FitLocusVec, DispLocusVec, NumCols, FitPerLocusProb, DispPerLocusProb, NumRands,
-                      OccPatches, RelFits){
-     (R, OccPatches, RangeParams) ### Need to replace RangeParams with necessary objects
+# This function will use the current abundances of the patch and the type of
+#    reproduction being modeled (asexual, monoecious, or dioecious) to calculate
+#    the expected population size of each patch in the next generation. Then,
+#    it will draw and return the realized population sizes from a Poisson 
+#    distribution.
+### INPUTS
+#    R: The intrinsic growth rate for the Ricker model (Melbourne & Hastings 2008)
+#    OccPatches: A matrix with the unique x, y identifiers of each occupied patch
+#                   organized into columns (column 1 = x; column 2 = y)
+#    z: The expected sex ratio in the population
+#    RangeParams
+#    PopMat, Haploid, PopIndices as previously defined
+### OUTPUTS
+# A vector of the realized abundances of each occupied patch in the next generation
+Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, z, RangeParams){
      # Check that Rmax is within the proper range
      if(R < 1){
           write("R values less than 1 will result in negative alpha values, causing unrestricted population growth",
@@ -136,291 +143,180 @@ Reproduce <- function(beta, gamma, tau, omega, Rmax, Kmax,
           # Extract the local population
           CurPatchPop <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
                                      (PopMat[,PopIndices$y1] == OccPatches[i,2]) )
-          PatchPopSize <- length(CurPatchPop)
+          PatchAbund <- length(CurPatchPop)
           
           # Now determine the expected population growth according to the stochastic
           #    Ricker models derived by Melbourne & Hastings (2008) and the 
           #    simulation parameters
-          if(is.infinite(Alphas[1])){
+          if(is.infinite(Alphas[i])){
                Ntp1[i] <- 0
           } else{
                if(Haploid == 1){
-                    Ntp1[i] <- PatchPopSize * R * exp(-1 * Alphas[i] * PatchPopSize)
+                    Ntp1[i] <- PatchAbund * R * exp(-1 * Alphas[i] * PatchAbund)
                } else{
                     if(is.null(PopIndices$sex)){
-                         Ntp1[i] <- PatchPopSize * R * exp(-1 * Alphas[i] * PatchPopSize)
+                         Ntp1[i] <- PatchAbund * R * exp(-1 * Alphas[i] * PatchAbund)
                     } else{
                          CurFemales <- which( (PopMat[,PopIndices$x1] == OccPatches[i,1]) & 
                                                    (PopMat[,PopIndices$y1] == OccPatches[i,2]) &
                                                    (PopMat[,PopIndices$sex] == 1) )
-                         NumFemales <- length(CurFemales)
-                         AllFemale <- NumFemales == PatchPopSize
-                         Ntp1[i] <- (NumFemales * (R / z) * exp(-1 * Alphas[i] * PatchPopSize)) * (1 - AllFemale)
+                         nFem <- length(CurFemales)
+                         # Calculate expected population growth with a forced 0
+                         #    if the whole population is female
+                         AllFemale <- NumFemales == PatchAbund
+                         Ntp1[i] <- (nFem * (R / z) * exp(-1 * Alphas[i] * PatchAbund)) * 
+                                        (1 - AllFemale)
                     }
                }
           }
      }
-     
      # Use the expected population sizes to generate the realized population 
      #    sizes for each patch
      RealizedNtp1 <- rpois(n = NumPatches, lambda = Ntp1)
      return(RealizedNtp1)
 }
 
-###### Matfill
-###### Inheritence
-
-
-
-
-
-
-
-###### MatFill
-# This function will fill in the appropriate values for a new population matrix
-#    in the Reproduce function.
+###### NextPopMat
+# This function will produce a new PopMat for the next generation.
 ### INPUTS
-# RealizedNtp1:     A vector of the stochastically determined population size for
-#                        each occupied patch in the next generation
-# PopIndices:       A list containing all the index values for different columns in
-#                        the matrix
-# OccPatches:       A two column matrix with the x and y coordinates of all
-#                        occupied patches in the current generation.
-# z:         The sex ratio of the population (set to 0.5 by default)
-# RelFits:          A vector of the relative fitness values of individuals in the
-#                        population.
-# FitCols:       A vector of the columns corresponding to fitness traits
-# DispCols:      A vector of the columns corresponding to dispersal
-# PopMat:           The population matrix for the current generation
-# NumCols:          The overall number of columns in population matrices
-# SexRands:         A large vector of random numbers for assigning sex
-# CurPop:           A vector of the current individuals in the population
-# SumNtp1:          The total number of offspring in the next generation
-# Ld:            Number of dispersal loci
-# Lf:             Number of fitness loci
-# SegVals(1,2 and index for both fit and disp; see Inheritence() documentation)
-# MutStd for fit and disp
-# NumMut(for both fit and disp)
-# OffspringIndex: an all purpose index for the random number vectors for which
-#    there is a single entry per offpsring (NumMuts and SexRands)
-# LocusVec (for both Fit and Disp; see Inheritence() documentation for details)
-# AlleleVec (For both fit and disp; see Inheritence() documentation)
+# Ntp1:     The output from the Reproduce function
+# SumNtp1:  The total number of new offspring making up the next generation
+# Ld:       The number of loci defining the dispersal trait
+# LocusVec: An integer vector of 1 to the number of loci
+# AlleleVec: An integer vector of 1 to the number of alleles defining dispersal
+#              (in the haploid case, this will be identical to LocusVec)
+# SegVals:  A binary matrix with two rows used to determine which alleles each
+#              parent contributes to the offspring
+# SegIndex: The current column index value to be used with the SegVals matrix
+# NumMutVec: A large vector with the randomly generated number of mutations to
+#              be used with each offspring
+# MutIndex:  The index to be used with NumMutVec
+# MutStd:    Previously calculated standard deviation for mutational affects
+# PopMat, PopIndices, OccPatches, and z as defined previously
 ### OUTPUTS
-# This function will return a new matrix composed of all the offspring and their
-#    location, loci, etc. for the next generation.
-MatFill <- function(RealizedNtp1, PopIndices, OccPatches, z, RelFits,
-                    PopMat, NumCols, SexRands = NULL, CurPop, SumNtp1, Ld, Lf, 
-                    DispSegVals1, DispSegVals2, DispSegIndex, FitSegVals1, FitSegVals2, 
-                    FitSegIndex, FitMutStd, DispMutStd, FitNumMut, DispNumMut, OffspringIndex,
-                    FitLocusVec, DispLocusVec, FitAlleleVec, DispAlleleVec){
-     # Create the new matrix for the next population
+# This function returns a new population matrix with the same columns but with
+#    updated row information for the next generation.
+NextPopMat <- function(Ntp1, PopIndices, OccPatches, z, SumNtp1, Ld, PopMat, LocusVec,
+                       SegVals, SegIndex, NumMutVec, MutIndex, AlleleVec, MutStd){
      NewPopMat <- matrix(NA, nrow = SumNtp1, ncol = NumCols)
-     
-     # Filter for only the patches that produced offspring
-     NewOccPatches <- which(RealizedNtp1 > 0)
-     Ntp1 <- RealizedNtp1[NewOccPatches]
-     
-     # Now step through and fill in the matrix, starting by setting initital row
-     #    values
+     # Filter for only the patches that produced offspring and fill in the matrix
+     NewOccPatches <- which(Ntp1 > 0)
+     Ntp1 <- Ntp1[NewOccPatches]
      StartRow <- 1
      EndRow <- Ntp1[1]
      for(i in 1:length(NewOccPatches)){
           CurVec <- StartRow:EndRow
-          # Now update the starting and ending row for the next iteration of the
-          #    loop.
-          CurEnd <- EndRow
-          CurStart <- StartRow
-          StartRow <- EndRow + 1
-          EndRow <- EndRow + Ntp1[i+1]
-          
           # Fill in the location details
           NewPopMat[CurVec, PopIndices$x0] <- OccPatches[NewOccPatches[i], 1]
           NewPopMat[CurVec, PopIndices$y0] <- OccPatches[NewOccPatches[i], 2]
-          
-          
           # Identify the potential parents in the current patch
           locals <- which( (PopMat[,PopIndices$x1] == OccPatches[NewOccPatches[i], 1]) &
                                 PopMat[,PopIndices$y1] == OccPatches[NewOccPatches[i], 2])
           NumLocals <- length(locals)
-          # Depending on life history being modeled (monoecious vs. dioecious),
-          #    add in sex information if relevant and determine parents for each
-          #    offspring
-          if( !(is.null(PopIndices$sex)) ){
-               NewPopMat[CurVec, PopIndices$sex] <- SexRands[(OffspringIndex + CurStart):(OffspringIndex + CurEnd)]
-               
-               # Identify the females and males present in the current patch
-               females <- which(PopMat[locals, PopIndices$sex] == 1)
-               males <- which(PopMat[locals, PopIndices$sex] == 0)
-               
-               # Now extract the relative fitness values for the males and
-               #    females
-               FemaleFits <- RelFits[females]
-               MaleFits <- RelFits[males]
-               
-               # Sample from the pool of females and males according to their
-               #    relative fitnesses to select parents for each offspring, but
-               #    only use the sample command if there are more than one male
-               #    or female available to avoid undesired behavior from the
-               #    sample function
-               if(length(females) == 1){
-                    parent1 <- rep(females, Ntp1[i])
-               } else{
-                    parent1 <- sample(females, size = Ntp1[i], replace = TRUE,
-                                      prob = FemaleFits)
-               }
-               if(length(males) == 1){
-                    parent2 <- rep(males, Ntp1[i])
-               } else{
-                    parent2 <- sample(males, size = Ntp1[i], replace = TRUE,
-                                      prob = MaleFits)
-               }
-               parents <- cbind(parent1, parent2)
-          } else{
-               # Get the relative fitness values for the potential parents
-               ParentFits <- RelFits[locals]
-               
-               # Next select both parents, again avoiding unwanted behavior
-               #    from the sample function
+          # Determine inheritence of alleles and assignment of parents depending
+          #    on the mode of reproduction
+          if(Haploid){
+               # Determine which individuals produce offspring
                if(NumLocals == 1){
-                    parent1 <- rep(locals, Ntp1[i])
-                    parent2 <- rep(locals, Ntp1[i])
-               } else if(NumLocals == 2){
-                    parent1 <- rep(locals[1], Ntp1[i])
-                    parent2 <- rep(locals[2], Ntp1[i])
+                    parents <- rep(locals, Ntp1[i])
                } else{
-                    parent1 <- sample(locals, size = Ntp1[i], replace = TRUE, 
-                                      prob = ParentFits)
-                    parent2 <- sample(locals, size = Ntp1[i], replace = TRUE, 
-                                      prob = ParentFits)
-                    SameParent <- which(parent1 == parent2)
-                    for(j in SameParent){
-                         ParentPool <- setdiff(locals, parent1[j])
-                         parent2[j] <- sample(ParentPool, size = 1,
-                                              prob = RelFits[ParentPool])
-                    }
+                    parents <- sample(locals, size = Ntp1[i], replace = TRUE)
                }
-               parents <- cbind(parent1, parent2)
+               NewPopMat[CurVec, PopIndices$DispCols] <- HapInherit(PatchPop = Ntp1[i], parents = parents, PopMat = PopMat,
+                                                                    PopIndices = PopIndices, NumMutVec = NumMutVec,
+                                                                    MutIndex = MutIndex, MutStd = MutStd, AlleleVec = AlleleVec)
+          } else{
+               if(is.null(PopIndices$sex)){
+                    if(NumLocals == 1){
+                         parent1 <- rep(locals, Ntp1[i])
+                         parent2 <- rep(locals, Ntp1[i])
+                    } else{
+                         parent1 <- sample(locals, size = Ntp1[i], replace = TRUE)
+                         SelfFert <- SelfRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
+                         parent2 <- sample(locals, size = Ntp1[i], replace = TRUE)
+                         SameParent <- which(parent1 == parent2)
+                         for(j in SameParent){
+                              ParentPool <- setdiff(locals, parent1[j])
+                              parent2[j] <- sample(ParentPool, size = 1)
+                         }
+                         parent2 <- ifelse(SelfFert == 1, parent1, parent2)
+                    }
+                    parents <- cbind(parent1, parent2)
+               } else{
+                    NewPopMat[CurVec, PopIndices$sex] <- SexRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
+                    # Identify the females and males present in the current patch
+                    females <- which(PopMat[locals, PopIndices$sex] == 1)
+                    males <- which(PopMat[locals, PopIndices$sex] == 0)
+                    parent1 <- ifelse(length(females == 1), rep(females, Ntp1[i]),
+                                      sample(females, size = Ntp1[i], replace = TRUE))
+                    parent2 <- ifelse(length(males) == 1, rep(males, Ntp1[i]),
+                                      sample(males, size = Ntp1[i], replace = TRUE))
+                    parents <- cbind(parent1, parent2)
+               }
+               NewPopMat[CurVec, PopIndices$DispCols] <- DipInherit(PatchPop = Ntp1[i], Ld = Ld, PopMat = PopMat,
+                                                                    parents = parents, SegVals = SegVals, SegIndex = SegIndex,
+                                                                    NumMutVec = NumMutVec, MutIndex = MutIndex, 
+                                                                    AlleleVec = AlleleVec, MutStd = MutStd, LocusVec = LocusVec)
           }
-          # Fill in the loci according to the inheritence function
-          PatchNtp1 <- length(CurVec)
-          NewPopMat[CurVec, PopIndices$FitCols] <- Inheritence(Cols = PopIndices$FitCols, SumNtp1 = PatchNtp1,
-                                                       parents = parents, PopMat = PopMat,
-                                                       NumLoci = Lf, SegVals1 = FitSegVals1,
-                                                       SegVals2 = FitSegVals2, SegIndex = FitSegIndex,
-                                                       MutStd = FitMutStd, NumMutVec = FitNumMut,
-                                                       MutIndex = OffspringIndex, LocusVec = FitLocusVec,
-                                                       AlleleVec = FitAlleleVec)
-          NewPopMat[CurVec, PopIndices$DispCols] <- Inheritence(Cols = PopIndices$DispCols, SumNtp1 = PatchNtp1,
-                                                        parents = parents, PopMat = PopMat,
-                                                        NumLoci = Ld, SegVals1 = DispSegVals1,
-                                                        SegVals2 = DispSegVals2, SegIndex = DispSegIndex,
-                                                        MutStd = DispMutStd, NumMutVec = DispNumMut,
-                                                        MutIndex = OffspringIndex, LocusVec = DispLocusVec,
-                                                        AlleleVec = DispAlleleVec)
+          # Update the starting and ending row for the next iteration of the loop
+          StartRow <- EndRow + 1
+          EndRow <- EndRow + Ntp1[i+1]
      }
      return(NewPopMat)
 }
 
-###### Inheritence
-# This function performs inheritence of alleles from both parents, assuming
-#    independent segregation and no crossover events. It incorporates mutations
-#    in alleles via the U and Vm parameters (see below).
-# INPUTS
-# parents:     A matrix with two columns and a number of rows equal to the 
-#                   number of offpsring being created. Each row contains the
-#                   IDs (row indices in PopMat) of the parent(s) of the 
-#                   offspring corresponding to that row.
-# Cols:        A vector containing the focal columns containing the loci for the
-#                   trait being inherited.
-# PopMat:      The matrix containing all population information for the parental
-#                   generation.
-# NumLoci:     The number of loci for the given trait
-# SegVals1:    A large vector with pre-randomized values for parent1
-# SegVals2:    The same for parent2
-# SegIndex:    The index for both vectors
-# MutStd:      The standard deviation of mutatiosn for that trait
-# NumMutVec:   A pre-randomized vector with values of number of mutations for a 
-#                   given trait
-# MutIndex:    The index for that vector
-# SumNtp1:     The total number of offspring in the next generation
-# LocusVec:    A vector of 1:the number of loci for a given trait. Made once in
-#                   the main function and then re-used over and over here for efficiency.
-# AlleleVec:   Similar to LocusVec, but with an entry for each allele (i.e. it is twice
-#                   the size of LocusVec)
-# OUTPUTS
-# This function will return a matrix consisting of a number of rows equal to
-#    the number of offspring produced and a number of columns equal to the 
-#    number of loci defining the trait under consideration.
-Inheritence <- function(Cols, parents, PopMat, SumNtp1, NumLoci, SegVals1, AlleleVec,
-                        MutStd, NumMutVec, MutIndex, LocusVec, SegVals2, SegIndex){
-     SegregatedLoci <- matrix(NA, nrow = SumNtp1, ncol = 2*NumLoci)
-     for(i in 1:SumNtp1){
-          ParentLoci <- PopMat[parents[i,], Cols]
-          Parent1Alleles <- LocusVec + NumLoci * SegVals1[(SegIndex + (i - 1) * NumLoci):(SegIndex + i * NumLoci - 1)]
-          Parent2Alleles <- LocusVec + NumLoci * SegVals2[(SegIndex + (i - 1) * NumLoci):(SegIndex + i * NumLoci - 1)]
-          SegregatedLoci[i,] <- c(ParentLoci[1,Parent1Alleles], ParentLoci[2,Parent2Alleles])
+###### HapInheritence
+# This function handles allele inheritence and mutation for haploid scenarios
+### INPUTS
+# parents:     A vector of the parent producing each offspring
+# PatchPop:    The size of the population in the current patch
+# PopMat, PopIndices, NumMutVec, MutIndex, MutStd, and AlleleVec as previously defined
+### OUTPUTS
+# This function returns a matrix with a row for each offspring and columns corresponding
+#    to the inherited allele values
+HapInherit <- function(parents, PopMat, PopIndices, NumMutVec, MutIndex, PatchPop, MutStd,
+                       AlleleVec){
+     OffspringAlleles <- PopMat[parents, PopIndices$DispCols]
+     # Determine the number of mutations affecting each offspring
+     NumMut <- NumMutVec[MutIndex:(MutIndex + PatchPop-1)]
+     # Mutate the affected alleles
+     MutOffspring <- which(NumMut != 0)
+     for(i in MutOffspring){
+          MutLocus <- sample(AlleleVec, size = NumMut[i], replace = TRUE)
+          OffspringAlleles[i, MutLocus] <- rnorm(mean = OffspringAlleles[i, MutLocus],
+                                                 sd = MutStd, n = NumMut[i])
      }
-     
+     return(OffspringAlleles)
+}
+
+###### DipInheritence
+# This function handles allele inheritence and mutation for diploid scenarios
+### INPUTS
+# All function inputs are as defined previously
+### OUTPUTS
+# This function returns a matrix with a row for each offspring and columns corresponding
+#    to the inherited allele values
+DipInherit <- function(PopIndices, parents, PopMat, PatchPop, Ld, SegVals, AlleleVec,
+                        MutStd, NumMutVec, MutIndex, LocusVec, SegIndex){
+     OffspringAlleles <- matrix(NA, nrow = PatchPop, ncol = 2*Ld)
+     for(i in 1:PatchPop){
+          ParentLoci <- PopMat[parents[i,], PopIndices$DispCols]
+          Parent1Alleles <- LocusVec + Ld * SegVals[1,(SegIndex + (i - 1) * Ld):(SegIndex + i * Ld - 1)]
+          Parent2Alleles <- LocusVec + Ld * SegVals[2,(SegIndex + (i - 1) * Ld):(SegIndex + i * Ld - 1)]
+          OffspringAlleles[i,] <- c(ParentLoci[1,Parent1Alleles], ParentLoci[2,Parent2Alleles])
+     }
      # Extract the number of mutations for offspring from the NumMutVec
-     NumMut <- NumMutVec[MutIndex:(MutIndex+SumNtp1-1)]
-     
+     NumMut <- NumMutVec[MutIndex:(MutIndex+PatchPop-1)]
      # Now step through each offspring in which a mutation takes place and alter
      #    allele values appropriately
      MutOffspring <- which(NumMut != 0)
      for(i in MutOffspring){
           MutLocus <- sample(AlleleVec, size = NumMut[i], replace = TRUE)
-          SegregatedLoci[i,MutLocus] <- rnorm(mean = SegregatedLoci[i,MutLocus], 
+          OffspringAlleles[i,MutLocus] <- rnorm(mean = OffspringAlleles[i,MutLocus], 
                                               sd = MutStd, n = NumMut[i])
      }
-     
-     # return the segregated and mutated loci
-     return(SegregatedLoci)
+     return(OffspringAlleles)
 }
-
-###### Reproduce
-# This function will use the previously calculated fitness traits and perform
-#    Ricker population growth in all occupied patches with offspring assigned
-#    to parental pairs according to individual fitness values.
-### INPUTS:
-# beta, gamma, tau:    Parameters corresponding to the range capacity fxn
-# omega:            The inverse of the strength of stabilizing selection.             
-# Rmax, Kmax:           The growth and carrying capacity parameters for logistic
-#                        growth. These values are the maximum attainable values
-#                        which are then used to compute realized values
-#                        throughout the range.
-# U:                A vector of 2 entries with the diploid mutation rate for
-#                        each trait.
-# Vm:               A vector of 2 entries with the mutational variance for each
-#                        trait.
-# lambda:         A value determining the gradient in local phenotypic optima
-#                        across the range.
-# traits:           A two column matrix of trait values created by CalcTraits
-# PopMat:           The matrix with all information on the current generation
-# EnvGradType:      The type of environmental gradient being measured (either "K"
-#                        or "R")
-# ColumnNames:      A vector of the column names relevant for the simulation.
-# z:         The sex ratio of the population if individuals are dioecious.
-#                        By default, this is set to 0.5
-# FitCols:       A vector of the column indices corresponding to fitness loci
-# DispCols:      A vector of the column indices corresponding to dispersal loci
-# eta:       A factor determining the mapping of individual patches onto
-#                        the landscape quality
-# PopIndices:       A list with the index of different columns in the population
-#                        matrix
-# SexRands(and index):   See the matfill function for details
-# CurPop:           A vector of the current population
-# Ld & Lf:     Number of loci for each trait
-# SegVals and indices for each trait:   See inheritence function
-# MutStd for both traits: See inheritence function
-# NumMut and indices for each trait:    See inheritence function
-# LocusVec for each trait:              See inheritence function
-# NumCols:          The number of columns in the population matrix
-# PerLocusProb:     The previously calculated per locus probability of a mutation
-# NumRands:         The number of random numbers to generate at a time
-# OccPatches:       A matrix with the x and y coordinates of all occupied patches
-# RelFits:          A vector of relative fitness values
-### OUTPUTS:
-# The function will return a vector of population sizes for the occupied patches
 
 # ------------------------------------------------------------------------------
 # -------------------------- Environmental Functions ---------------------------
