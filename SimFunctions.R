@@ -192,12 +192,16 @@ Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, z, RangeParams
 #              be used with each offspring
 # MutIndex:  The index to be used with NumMutVec
 # MutStd:    Previously calculated standard deviation for mutational affects
+# SelfRands: A large binary vector indicating whether each offspring results
+#              from selfing (1) or outcrossing (0). This is calculated previously
+#              using the SelfProb parameter
 # PopMat, PopIndices, OccPatches, and z as defined previously
 ### OUTPUTS
 # This function returns a new population matrix with the same columns but with
 #    updated row information for the next generation.
 NextPopMat <- function(Ntp1, PopIndices, OccPatches, z, SumNtp1, Ld, PopMat, LocusVec,
-                       SegVals, SegIndex, NumMutVec, MutIndex, AlleleVec, MutStd){
+                       SegVals, SegIndex, NumMutVec, MutIndex, AlleleVec, MutStd,
+                       SelfRands){
      NewPopMat <- matrix(NA, nrow = SumNtp1, ncol = NumCols)
      # Filter for only the patches that produced offspring and fill in the matrix
      NewOccPatches <- which(Ntp1 > 0)
