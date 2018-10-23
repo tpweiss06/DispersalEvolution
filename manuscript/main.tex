@@ -1,0 +1,119 @@
+\documentclass[11pt]{article}
+\usepackage[sc]{mathpazo} %Like Palatino with extensive math support
+\usepackage{fullpage}
+\usepackage[authoryear,sectionbib,sort]{natbib}
+\linespread{1.7}
+\usepackage[utf8]{inputenc}
+\usepackage{lineno}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\filcenter}{\thesection}{1em}{}
+\titleformat{\subsection}[block]{\Large\itshape\filcenter}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}[block]{\large\itshape}{\thesubsubsection}{1em}{}
+\titleformat{\paragraph}[runin]{\itshape}{\theparagraph}{1em}{}[. ]\renewcommand{\refname}{Literature Cited}
+
+\usepackage{mathptmx}
+\usepackage{hyperref}
+\usepackage{geometry}
+\usepackage[centertags]{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{fancybox}
+\usepackage{graphicx}
+\usepackage{graphics}
+\newcommand{\s}{^{(s)}}
+\usepackage{lineno}
+
+\title{Dispersal evolution during range expansions and shifts}
+
+\author{Christopher Weiss-Lehman$^{1,\ast}$ \\ 
+Allison K. Shaw$^{1}$}
+
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\noindent{} 1. University of Minnesota, Saint Paul, Minnesota 55108;
+
+\noindent{} $\ast$ Corresponding author; e-mail: cweissle@umn.edu
+
+\bigskip
+
+\noindent{\footnotesize Prepared using the suggested \LaTeX{} template for \textit{Am.\ Nat.}}
+
+\linenumbers{}
+\modulolinenumbers[3]
+
+\newpage{}
+
+\section*{Model overview}
+\subsection*{Purpose} 
+Range expanding populations with heritable dispersal traits are expected to evolve increased dispersal capabilities at the expansion edge due to spatial sorting of individuals by dispersal phenotype. The spatial assortment of highly dispersive individuals at the expansion edge, combined with the low intraspecific competition characteristic of edge populations, can create a feedback evolutionary process acting to increase dispersal capabilities at the edge. This phenomenon has been observed in both field and laboratory populations, leading to the prediction that such dispersal evolution may help species to track changing climatic conditions via range shifts. However, many factors can influence the speed with which dispersal evolves and theoretical studies have reached different conclusions as to whether dispersal evolution will help shifting populations. Importantly, however, these models were constructed with different assumptions governing the underlying genetic architecture of dispersal and the mode of reproduction. Here, we use a common modeling framework to disentangle the role of different factors on the speed of dispersal evolution in moving populations. Specifically, we vary the number of loci defining the dispersal trait, the number of chromosome copies comprising the genome (haploid vs. diploid), and the mode of reproduction (asexual vs. sexual). For each scenario, we simulate population dynamics within a one dimensional stable range for \_\_\_\_ generations to reach an equilibrium distribution of genotypes. Then, we simulate a range expansion with individuals from the edge of the range to quantify the time it takes for the expanding populations to reach a threshold dispersal phenotype. Finally, we use the original population to simulate climate change with a speed equal to the speed of an expansion wave defined by the same threshold dispersal phenotype. We can therefore directly compare the time to evolution of the dispersal phenotype in the range expansion with the extinction probability of populations shifting their range.
+
+\subsection*{State variables and scales} 
+The model tracks individuals defined by either one or two chromosome copies and a number of loci defining dispersal traits. The number of chromosome copies, number of loci, and mode of reproduction are set at the beginning of each simulation. In sexually reproducing, dioecious populations, individuals are further delineated as male and female. Space is modeled as a linear, one dimensional array of discrete habitat patches. The carrying capacity of each patch varies and is used to define the characteristics of the population's range. For simplicity, no variation in individual fitness or local adaptation is assumed.
+
+\subsection*{Process overview and scheduling} 
+The model assumes discrete, non-overlapping generations divided between two phases: dispersal and reproduction. Individuals first disperse from their natal patches with distance determined by their phenotypes and direction assigned randomly. After dispersal, individuals reproduce within their new patches, thus limiting the mating pool to local individuals when implementing sexual reproduction. The number of successful reproduction events (i.e. leading to a surviving offspring) in each patch is determined with a stochastic implementation of the classic Ricker model with parentage assigned randomly. Individuals may contribute to multiple successful reproduction events and no restrictions are placed on the number of mates for either males or females in dioecious populations (polygynandrous mating). Offspring inherit alleles from their parent(s) assuming independent segregation and a mutation process. After reproduction, all members of the current generation perish and their offspring disperse to begin the next generation.
+
+\section*{Design concepts}
+\subsection*{Emergence} 
+This model gives rise to several different emergent phenomena, including the spatial distribution of population abundance, genetic diversity, and dispersal phenotypes in the stable range at equilibrium. Additional emergent phenomena include the evolutionary trajectories of dispersal in expanding and shifting populations and the extinction probability of populations undergoing range shifts.
+
+\subsection*{Stochasticity} 
+Reproduction, dispersal distance, dispersal direction, and all processes related to the inheritance of loci are implemented stochastically as described below. Environmental determinants of the population range (both before and during climate change) are deterministic, however. By removing the confounding influence of environmental stochasticity, we are therefore better able to understand the genetic factors influencing dispersal evolution in range expansions and shifts.
+
+\subsection*{Interactions} 
+Individuals in all experimental scenarios interact via density dependent competition within patches. In scenarios with sexual reproduction and without obligate selfing, individuals also interact via mating within local patches. Additionally, the number of loci defining dispersal, the number of chromosome copies, and the mode of reproduction can all interact to effect the distribution of genotypes within the stable range, the time required to evolve the threshold dispersal level during range expansion, and, therefore, the probability of extinction during climate-induced range shifts.
+
+\subsection*{Desired output} 
+After reaching a spatial equilibrium within a stable range, each simulation will output the full details of all individuals from the latest generation. Using that output, we will simulate two additional scenarios: a range expansion and a range shift. From the range expansion, will save aggregate data on population abundance and the mean and variance of dispersal values within each patch in each generation. Additionally, we will output the generation at which the population at the edge of expansion reaches the threshold dispersal value. From the range shift, we will similarly aggregate data on population abundance and the mean and variance of dispersal values from each patch in each generation. If the population does not go extinct before evolving the dispersal phenotype required to track climate change, the simulation will continue for an additional \_\_\_\_ generations to ensure that the population survives, and then output the full details of all individuals from the latest generation.
+
+\section*{Details}
+\subsection*{Initialization} 
+To begin each simulation, several patches in the center of the range are populated to full carrying capacity with individuals whose genotypes are randomly generated assuming a normal distribution of allele frequencies. Populations are then allowed to grow and reach a spatial equilibrium within the stable range for a number of generations, after which range expansion and range shift simulations are performed. For the range expansion simulations, a number of individuals are randomly chosen from the edge of the landscape and placed within a single patch of an empty, uniformly habitable landscape. Due to computational restraints, we track only the leading edge of the expansion (defined as \_\_\_\_) rather than tracking every individual in the expanding population. For the range shift, the entire original population is used as the environmental conditions begin to shift in space to simulate climate change.
+
+\subsection*{Submodels}
+\paragraph{Defining the abiotic environment}
+Environmental conditions in each patch are defined by the carrying capacity, $K(x)$. To simulate range boundaries, we assume that $K(x)$ is set to a constant, maximum value, $K_max$, throughout the core of the range, the extent of which is defined by $\tau$. Then, at the range edges, $K(x)$ declines to $0$ at a constant proportion of $\gamma$ per patch. The range is then centered on $\beta$, which is held constant for the initial simulations of a stable range and then shifted linearly to simulate climate change (see below). More precisely, the carrying capacity of each patch is given by
+\begin{equation}
+K(x)=
+\begin{cases}
+	max(0, (1-\gamma(\beta(t) - \tau - x))K_max) & x < \beta(t) - \tau \\
+	K_max & \beta(t) - \tau \leq x \leq \beta(t) + \tau \\
+	max(0, (1-\gamma(x - \beta(t) - \tau))K_max) & x > \beta(t) + \tau
+\end{cases}
+\end{equation}
+ 
+ To simulate climate change, $\beta(t)$ is varied linearly with time at rate $\nu$ (i.e. $\beta(t)=\nu t$). For simulations of range expansion, the environmental conditions are simplified to a homogenous landscape of patches all with carrying capacities of $K_max$. 
+
+\paragraph{Local population dynamics}
+Population growth within each patch is modeled with a stochastic implementation of the classic Ricker model~\citep{ricker1954stock, melbourne2008extinction}. Importantly, this equation can account for asexual reproduction or sexual reproduction with explicit males and females~\citep{melbourne2008extinction}. In the simpler case of asexual reproduction and sexual reproduction of monoecious individuals, the expected population size in patch $x$ at time $t+1$ is given by
+\begin{equation}
+\hat{N}_{t+1,x}=N_{t,x}Re^{\frac{-RN_{t,x}}{K(x)}}
+\end{equation}
+where $N_{t,x}$ is the current population size of patch $x$, $R$ is the intrinsic growth rate, and $K_{x}$ is the carrying capacity of patch $x$. When modeling population growth of sexually reproducing, dioecious individuals, the expected population size in patch $x$ at time $t+1$ becomes
+\begin{equation}
+\hat{N}_{t+1,x}=F_{t,x}\frac{R}{\psi}e^{\frac{-RN_{t,x}}{K(x)}}
+\end{equation}
+where $F_{t,x}$ is the number of females in patch $x$ at time $t$ and $\psi$ is the sex ratio among offspring. To account for demographic stochasticity, the expected population size is then used to generate the realized population size in the next generation from a Poisson distribution.
+\begin{equation}
+N_{t+1,x}\sim Poisson(\hat{N}_{t+1,x})
+\end{equation}
+This realized population size in the next generation can also be thought of as the number of successful reproduction events in the current generation. For each of these successful reproduction events, parentage is assigned randomly, according to the mode of reproduction. For asexual reproduction, a single individual is drawn randomly and with replacement (thus allowing for multiple offspring from a single individual) from the local population for each successful reproduction event. For sexual reproduction events, parental pairs are formed according to the nature of individuals in the population (monoecious or dioecious) and the probability of self fertilization ($\omega$). In populations of monoecious individuals, a single parent is first randomly selected from the local population. With probability $\omega$ the individual self fertilizes and with probability $1-\omega$ a second individual is required. If no other individual is present in the patch, then the reproduction event fails. Thus, by varying the value of $\omega$, we can simulate populations ranging from obligate selfing to obligate outcrossing and the resultant mate finding Allee effects that result. In populations of dioecious individuals, each reproduction event must both a male and female parent, imposing an even greater mate finding Allee effect in these populations. Males and females are selected randomly and with replacement from the population for each reproduction event and both males and females can mate multiple times (polygynandry). Once parentage is determined for each reproductive event, offspring inherit alleles from their parent(s), assuming no linkage among loci and a mutation process defined by two parameters: the per allele probability of mutation ($\nu_{m}$) and the standard deviation of mutational effects ($\sigma_{m}$). Thus, when a mutation occurs with probability $\nu_{m}$, the new allele value is drawn from a normal distribution with mean equal to the original allele value and a standard deviation of $\sigma_{m}$).
+
+\paragraph{Dispersal}
+Finally, individuals disperse according to an exponential dispersal kernel defined by each individual's dispersal phenotype. An individual's dispersal phenotype is the expected dispersal distance and is given by
+\begin{equation}
+d_{i} = \frac{\hat{d} e^{\rho\Sigma L}}{1+e^{\rho\Sigma L}} 
+\end{equation}
+where $\hat{d}$ is the maximum expected dispersal distance in terms of discrete patches, $\rho$ is a constant determining the slope of the transition between $0$ and $\hat{d}$, and the summation is taken across all alleles contributing to dispersal. Thus, loci are assumed to contribute additively with no dominance or epistasis. The expected dispersal distance, $d_{i}$ is then used to draw a realized distance from an exponential dispersal kernel and direction (forward or backward in the linear landscape) is determined randomly. Since the dispersal phenotype is the expected value of the exponential dispersal kernel, it can be used directly to calculate the two dimensional diffusion coefficient of population spread ($D$). Specifically, since $d_{i}^{2}$ represents the mean squared displacement of an individual with dispersal phenotype $d_{i}$, the one dimensional diffusion coefficient can be calculated as
+\begin{equation}
+D = \frac{1}{2}d_{i}^{2}
+\end{equation}
+
+\bibliographystyle{amnat}
+\bibliography{main_bib}
+
+\end{document}
