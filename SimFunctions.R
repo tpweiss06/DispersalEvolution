@@ -202,8 +202,8 @@ Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, psi, CurBeta,
 # This function returns a new population matrix with the same columns but with
 #    updated row information for the next generation.
 NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, LocusVec,
-                       SegVals, SegIndex, NumMutVec, MutIndex, AlleleVec, MutStd,
-                       SelfRands){
+                       SegVals, SegIndex, NumMutVec, OffspringIndex, AlleleVec, MutStd,
+                       SelfRands, NumCols){
      NewPopMat <- matrix(NA, nrow = SumNtp1, ncol = NumCols)
      # Filter for only the patches that produced offspring and fill in the matrix
      NewOccPatches <- which(Ntp1 > 0)
@@ -228,7 +228,7 @@ NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, Lo
                }
                NewPopMat[CurVec, PopIndices$DispCols] <- HapInherit(PatchPop = Ntp1[i], parents = parents, PopMat = PopMat,
                                                                     PopIndices = PopIndices, NumMutVec = NumMutVec,
-                                                                    MutIndex = MutIndex, MutStd = MutStd, AlleleVec = AlleleVec)
+                                                                    MutIndex = OffspringIndex, MutStd = MutStd, AlleleVec = AlleleVec)
           } else{
                if(is.null(PopIndices$sex)){
                     if(NumLocals == 1){
@@ -259,7 +259,7 @@ NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, Lo
                }
                NewPopMat[CurVec, PopIndices$DispCols] <- DipInherit(PatchPop = Ntp1[i], L = L, PopMat = PopMat,
                                                                     parents = parents, SegVals = SegVals, SegIndex = SegIndex,
-                                                                    NumMutVec = NumMutVec, MutIndex = MutIndex, 
+                                                                    NumMutVec = NumMutVec, MutIndex = OffspringIndex, 
                                                                     AlleleVec = AlleleVec, MutStd = MutStd, LocusVec = LocusVec)
           }
           # Update the starting and ending row for the next iteration of the loop
@@ -647,18 +647,19 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      # Next initialize the generation 0 founding population and calculate dispersal
      #    phenotypes
      PopMat <- Initialize(PopIndices = PopIndices, PopSize = InitPopSize, NumCols = NumCols,
-                          BetaInit = BetaInit, DispDiv = DispDiv)
+                          BetaInit = BetaInit, DispVar = DispVar)
      PopSize <- nrow(PopMat)
      
      # Generate the matrix of occupied patches and get the relative fitness of
      #    each individual
-     OccPatches <- unique(PopMat[CurPop,PopIndices$x1])
+     OccPatches <- unique(PopMat[,PopIndices$x1])
      
      # Generate the population sizes for the next generation
      RealizedNtp1 <- Reproduce(CurBeta = BetaInit, gamma = gamma, tau = tau,
                                R = R, Kmax = Kmax, PopMat = PopMat,
                                PopIndices = PopIndices, psi = psi,
-                               OccPatches = OccPatches, Haploid = Haploid)
+                               OccPatches = OccPatches, Haploid = Haploid,
+                               Expand = FALSE)
      
      # Make sure the population isn't going immediately extinct
      PopSize <- sum(RealizedNtp1)
@@ -667,7 +668,8 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
           RealizedNtp1 <- Reproduce(CurBeta = BetaInit, gamma = gamma, tau = tau,
                                     R = R, Kmax = Kmax, PopMat = PopMat,
                                     PopIndices = PopIndices, psi = psi,
-                                    OccPatches = OccPatches, Haploid = Haploid)
+                                    OccPatches = OccPatches, Haploid = Haploid,
+                                    Expand = FALSE)
           PopSize <- sum(RealizedNtp1)
           ExtCounter <- ExtCounter + 1
      }
@@ -675,13 +677,13 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      PopMat <- NextPopMat(Ntp1 = RealizedNtp1, PopIndices = PopIndices, 
                           OccPatches = OccPatches, psi = psi, SumNtp1 = PopSize, 
                           L = L, PopMat = PopMat, LocusVec = LocusVec,
-                          SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMutVec, 
-                          MutIndex = MutIncex, AlleleVec = AlleleVec, 
-                          MutStd = sigma, SelfRands = SelfRands)
+                          SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
+                          OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
+                          MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
      # Now update the SegIndices
-     SegIndex <- SegIndex + SumNtp1*L
+     SegIndex <- SegIndex + PopSize*L
      # And update the OffspringIndex
-     OffspringIndex <- OffspringIndex + SumNtp1
+     OffspringIndex <- OffspringIndex + PopSize
 
      # Now run through the actual simulation
      InitialPopMat <- PopMat
@@ -725,14 +727,14 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
                PopSize <- sum(RealizedNtp1)
                if(PopSize > 0){
                     # Check that the SegVals vectors contain enough values and resample if not
-                    if( (SegIndex + PopSize*L) > NumRands ){
+                    if( (!Haploid) & ((SegIndex + PopSize*L) > NumRands) ){
                          SegVals[1,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                          SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                          SegIndex <- 1
                     }
                     # Check the same for the OffspringIndex
                     if( (OffspringIndex + PopSize) > NumRands){
-                         NumMut <- rbinom(n = NumRands, size = L, prob = PerLocusProb)
+                         NumMut <- rbinom(n = NumRands, size = L, prob = nu)
                          if( !(is.null(PopIndices$sex)) ){
                               SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
                          }
@@ -741,13 +743,13 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
                     PopMat <- NextPopMat(Ntp1 = RealizedNtp1, PopIndices = PopIndices, 
                                          OccPatches = OccPatches, psi = psi, SumNtp1 = PopSize, 
                                          L = L, PopMat = PopMat, LocusVec = LocusVec,
-                                         SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMutVec, 
-                                         MutIndex = MutIncex, AlleleVec = AlleleVec, 
-                                         MutStd = sigma, SelfRands = SelfRands)
+                                         SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
+                                         OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
+                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
                     # Now update the SegIndices
-                    SegIndex <- SegIndex + SumNtp1*L
+                    SegIndex <- SegIndex + PopSize*L
                     # And update the OffspringIndex
-                    OffspringIndex <- OffspringIndex + SumNtp1
+                    OffspringIndex <- OffspringIndex + PopSize
                } else{
                     PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
                }
@@ -880,13 +882,13 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                PopMat <- NextPopMat(Ntp1 = RealizedNtp1, PopIndices = PopIndices, 
                                     OccPatches = OccPatches, psi = psi, SumNtp1 = PopSize, 
                                     L = L, PopMat = PopMat, LocusVec = LocusVec,
-                                    SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMutVec, 
-                                    MutIndex = MutIncex, AlleleVec = AlleleVec, 
-                                    MutStd = sigma, SelfRands = SelfRands)
+                                    SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
+                                    OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
+                                    MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
                # Now update the SegIndices
-               SegIndex <- SegIndex + SumNtp1*L
+               SegIndex <- SegIndex + PopSize*L
                # And update the OffspringIndex
-               OffspringIndex <- OffspringIndex + SumNtp1
+               OffspringIndex <- OffspringIndex + PopSize
           } else{
                PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
           }
@@ -1059,13 +1061,13 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                     PopMat <- NextPopMat(Ntp1 = RealizedNtp1, PopIndices = PopIndices, 
                                          OccPatches = OccPatches, psi = psi, SumNtp1 = PopSize, 
                                          L = L, PopMat = PopMat, LocusVec = LocusVec,
-                                         SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMutVec, 
-                                         MutIndex = MutIncex, AlleleVec = AlleleVec, 
-                                         MutStd = sigma, SelfRands = SelfRands)
+                                         SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
+                                         OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
+                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
                     # Now update the SegIndices
-                    SegIndex <- SegIndex + SumNtp1*L
+                    SegIndex <- SegIndex + PopSize*L
                     # And update the OffspringIndex
-                    OffspringIndex <- OffspringIndex + SumNtp1
+                    OffspringIndex <- OffspringIndex + PopSize
                } else{
                     PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
                }
