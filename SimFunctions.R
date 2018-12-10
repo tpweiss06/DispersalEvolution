@@ -19,10 +19,11 @@
 # dmax: The maximum expected dispersal distance (in units of discrete patches)
 # rho: Determines the slope of the transition from 0 to dmax as the loci sum
 #         changes
+# lambda: Offsets the inflection point of the function from 0
 ### OUTPUTS
 # A vector of length PopSize with the i-th entry corresponding to the dispersal
 #    phenotype of the i-th individual in the population input
-DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, L, dmax, rho){
+DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, L, dmax, rho, lambda){
      # Calculate the sum of the quantitative loci defining dispersal for
      #    each individual, accounting for the different possible cases
      if(PopSize == 1){
@@ -35,7 +36,7 @@ DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, L, dmax, rho){
           }
      }
      # Now calculate the expected dispersal distance for each individual
-     d <- (dmax * exp(rho * LociSums)) / (1 + exp(rho * LociSums))
+     d <- (dmax * exp(rho * (LociSums - lambda))) / (1 + exp(rho * (LociSums - lambda)))
      return(d)
 }
 
@@ -50,7 +51,7 @@ DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, L, dmax, rho){
 # direction:      A large binary vector of randomly generated 1s and -1s to indicate
 #                   dispersal direction (forward or backward)
 # DirectIndex:  Index of the where to look within the vector of random numbers
-# PopIndices, PopSize, PopMat, rho, and dmax:  As previously defined
+# PopIndices, PopSize, PopMat:  As previously defined
 ### OUTPUTS:
 # The function will return a matrix with 2 columns and as many rows as individuals
 #    within the population. Each row will correspond to the post dispersal 
@@ -203,7 +204,7 @@ Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, psi, CurBeta,
 #    updated row information for the next generation.
 NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, LocusVec,
                        SegVals, SegIndex, NumMutVec, OffspringIndex, AlleleVec, MutStd,
-                       SelfRands, NumCols){
+                       SelfRands, NumCols, SexRands){
      NewPopMat <- matrix(NA, nrow = SumNtp1, ncol = NumCols)
      # Filter for only the patches that produced offspring and fill in the matrix
      NewOccPatches <- which(Ntp1 > 0)
@@ -251,16 +252,23 @@ NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, Lo
                     # Identify the females and males present in the current patch
                     females <- which(PopMat[locals, PopIndices$sex] == 1)
                     males <- which(PopMat[locals, PopIndices$sex] == 0)
-                    parent1 <- ifelse(length(females == 1), rep(females, Ntp1[i]),
-                                      sample(females, size = Ntp1[i], replace = TRUE))
-                    parent2 <- ifelse(length(males) == 1, rep(males, Ntp1[i]),
-                                      sample(males, size = Ntp1[i], replace = TRUE))
+                    if(length(females) == 1){
+                         parent1 <- rep(females, Ntp1[i])
+                    }else{
+                         parent1 <- sample(females, size = Ntp1[i], replace = TRUE)
+                    }
+                    if(length(males) == 1){
+                         parent2 <- rep(males, Ntp1[i])
+                    }else{
+                         parent2 <- sample(males, size = Ntp1[i], replace = TRUE)
+                    }
                     parents <- cbind(parent1, parent2)
                }
                NewPopMat[CurVec, PopIndices$DispCols] <- DipInherit(PatchPop = Ntp1[i], L = L, PopMat = PopMat,
                                                                     parents = parents, SegVals = SegVals, SegIndex = SegIndex,
                                                                     NumMutVec = NumMutVec, MutIndex = OffspringIndex, 
-                                                                    AlleleVec = AlleleVec, MutStd = MutStd, LocusVec = LocusVec)
+                                                                    AlleleVec = AlleleVec, MutStd = MutStd, LocusVec = LocusVec,
+                                                                    PopIndices = PopIndices)
           }
           # Update the starting and ending row for the next iteration of the loop
           StartRow <- EndRow + 1
@@ -286,11 +294,16 @@ HapInherit <- function(parents, PopMat, PopIndices, NumMutVec, MutIndex, PatchPo
      MutOffspring <- which(NumMut != 0)
      # Mutate the affected alleles
      if(length(AlleleVec) > 1){
-          for(i in MutOffspring){
-               MutLocus <- sample(AlleleVec, size = NumMut[i], replace = TRUE)
-               OffspringAlleles[i, MutLocus] <- rnorm(mean = OffspringAlleles[i, MutLocus],
-                                                       sd = MutStd, n = NumMut[i])
-          }
+               for(i in MutOffspring){
+                    MutLocus <- sample(AlleleVec, size = NumMut[i], replace = TRUE)
+                    if(length(parents) > 1){
+                         OffspringAlleles[i, MutLocus] <- rnorm(mean = OffspringAlleles[i, MutLocus],
+                                                                sd = MutStd, n = NumMut[i])
+                    } else{
+                         OffspringAlleles[MutLocus] <- rnorm(mean = OffspringAlleles[MutLocus],
+                                                                sd = MutStd, n = NumMut)
+                    }
+               }
      } else{
           OffspringAlleles[MutOffspring] <- rnorm(mean = OffspringAlleles[MutOffspring],
                                                   sd = MutStd, n = length(MutOffspring))
@@ -406,8 +419,7 @@ ChangeClimate <- function(BetaInit, LengthShift, v){
 #                   the commonly used simulation platform QuantiNemo
 ### OUTPUTS
 # A filled in population matrix to start generation 0
-Initialize <- function(PopIndices, PopSize, BetaInit, psi, 
-                       DispVar, A = 255, NumCols){
+Initialize <- function(PopIndices, PopSize, BetaInit, psi, DispVar, A = 255, NumCols){
      # First make an empty population matrix with the correct names
      PopMat <- matrix(NA, nrow = PopSize, ncol = NumCols)
      
@@ -421,7 +433,7 @@ Initialize <- function(PopIndices, PopSize, BetaInit, psi,
      }
      
      # Now fill in the dispersal allele columns and return the matrix
-     sigma <- sqrt(DispVar)
+     sigma <- sqrt(DispVar / length(PopIndices$DispCols))
      AlleleVals <- seq(-6*sigma, 6*sigma, length.out = A)
      InitFreqProbs <- dnorm(x = AlleleVals, mean = 0, sd = sigma)
      for(i in PopIndices$DispCols){
@@ -541,7 +553,7 @@ SaveParams <- function(parameters, FilePath){
                                           "nu", "sigma", "L", "R", "Kmax", "Haploid",
                                           "kern", "monoecious", "BurnIn",
                                           "LengthShift", "dThresh", "InitPopSize", "psi",
-                                          "DispVar", "dmax", "rho", "NumRands")
+                                          "DispVar", "dmax", "rho", "lambda", "NumRands")
      if(sum(ParamCheck) != length(ParamCheck)){
           write("Incorrect names or number of input parameters", stderr())
           return(NULL)
@@ -573,7 +585,8 @@ SaveParams <- function(parameters, FilePath){
      cat("psi <- ", parameters$psi, "\n", sep = "")
      cat("DispVar <- ", parameters$DispVar, "\n", sep = "")
      cat("dmax <- ", parameters$dmax, "\n", sep = "")
-     cat("rho <- ", rho, "\n", sep = "")
+     cat("rho <- ", parameters$rho, "\n", sep = "")
+     cat("lambda <- ", parameters$lambda, "\n", sep = "")
      cat("NumRands <- ", parameters$NumRands, "\n", sep = "")
      sink()
 }
@@ -636,6 +649,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      if( !(is.null(PopIndices$sex)) ){
           SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
      } else{
+          SexRands <- NULL
           if(!Haploid){
                SelfRands <- rbinom(n = NumRands, size = 1, prob = omega)
           }
@@ -647,7 +661,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      # Next initialize the generation 0 founding population and calculate dispersal
      #    phenotypes
      PopMat <- Initialize(PopIndices = PopIndices, PopSize = InitPopSize, NumCols = NumCols,
-                          BetaInit = BetaInit, DispVar = DispVar)
+                          BetaInit = BetaInit, DispVar = DispVar, psi = psi)
      PopSize <- nrow(PopMat)
      
      # Generate the matrix of occupied patches and get the relative fitness of
@@ -679,7 +693,8 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
                           L = L, PopMat = PopMat, LocusVec = LocusVec,
                           SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
                           OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
-                          MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
+                          MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols,
+                          SexRands = SexRands)
      # Now update the SegIndices
      SegIndex <- SegIndex + PopSize*L
      # And update the OffspringIndex
@@ -697,7 +712,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
                PopSize <- nrow(PopMat)
           } else{
                disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho)
+                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
                
                # Check that there are enough entries left in the direction vector and repopulate
                #    it if necessary
@@ -745,7 +760,8 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
                                          L = L, PopMat = PopMat, LocusVec = LocusVec,
                                          SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
                                          OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
-                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
+                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols,
+                                         SexRands = SexRands)
                     # Now update the SegIndices
                     SegIndex <- SegIndex + PopSize*L
                     # And update the OffspringIndex
@@ -830,13 +846,13 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
      
      # Calculate the mean dispersal phenotype of the edge population
      MuDisp <- mean(DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                           Haploid = Haploid, L = L, dmax = dmax, rho = rho))
+                           Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda))
      
      # Now run the simulation
      g <- 1
      while((MuDisp < dThresh) & (PopSize > 0)){
           disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                            Haploid = Haploid, L = L, dmax = dmax, rho = rho)
+                            Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
                
           # Check that there are enough entries left in the direction vector and repopulate
           #    it if necessary
@@ -919,7 +935,7 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                     SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
                     DispPhens <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize,
                                           PopIndices = PopIndices, Haploid = Haploid,
-                                          L = L, dmax = dmax, rho = rho)
+                                          L = L, dmax = dmax, rho = rho, lambda = lambda)
                     MuDisp <- mean(DispPhens)
                     SumStats[SumStatRow, SumStatCols$MuPhen] <- MuDisp
                     SumStats[SumStatRow, SumStatCols$SigmaPhen] <- sd(DispPhens)
@@ -1015,7 +1031,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
      for(g in 1:LengthShift){
           if(PopSize > 0){
                disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho)
+                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
                
                # Check that there are enough entries left in the direction vector and repopulate
                #    it if necessary
@@ -1092,7 +1108,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                          SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
                          DispPhens <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize,
                                                PopIndices = PopIndices, Haploid = Haploid,
-                                               L = L, dmax = dmax, rho = rho)
+                                               L = L, dmax = dmax, rho = rho, lambda = lambda)
                          SumStats[SumStatRow, SumStatCols$MuPhen] <- mean(DispPhens)
                          SumStats[SumStatRow, SumStatCols$SigmaPhen] <- sd(DispPhens)
                          SumStatRow <- SumStatRow + 1

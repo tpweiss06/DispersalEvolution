@@ -1,5 +1,64 @@
-\begin{thebibliography}{2}
+\begin{thebibliography}{26}
 \providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Alex~Perkins et~al.(2013)Alex~Perkins, Phillips, Baskett, and
+  Hastings}]{alex2013evolution}
+Alex~Perkins, T., B.~L. Phillips, M.~L. Baskett, and A.~Hastings. 2013.
+\newblock Evolution of dispersal and life history interact to drive
+  accelerating spread of an invasive species.
+\newblock Ecology Letters 16:1079--1087.
+
+\bibitem[{Boeye et~al.(2013)Boeye, Travis, Stoks, and Bonte}]{boeye2013more}
+Boeye, J., J.~M. Travis, R.~Stoks, and D.~Bonte. 2013.
+\newblock More rapid climate change promotes evolutionary rescue through
+  selection for increased dispersal distance.
+\newblock Evolutionary Applications 6:353--364.
+
+\bibitem[{Burton et~al.(2010)Burton, Phillips, and Travis}]{burton2010trade}
+Burton, O.~J., B.~L. Phillips, and J.~M. Travis. 2010.
+\newblock Trade-offs and the evolution of life-histories during range
+  expansion.
+\newblock Ecology letters 13:1210--1220.
+
+\bibitem[{Chen et~al.(2017)Chen, Zhang, Church, Watson, King, Monselesan,
+  Legresy, and Harig}]{chen2017increasing}
+Chen, X., X.~Zhang, J.~A. Church, C.~S. Watson, M.~A. King, D.~Monselesan,
+  B.~Legresy, and C.~Harig. 2017.
+\newblock The increasing rate of global mean sea-level rise during 1993--2014.
+\newblock Nature Climate Change 7:492.
+
+\bibitem[{Elton(1958)}]{elton1958ecology}
+Elton, C. 1958.
+\newblock The ecology of invasions by animals and plants.
+\newblock The ecology of invasions by animals and plants. .
+
+\bibitem[{Fisher(1937)}]{fisher1937wave}
+Fisher, R.~A. 1937.
+\newblock The wave of advance of advantageous genes.
+\newblock Annals of eugenics 7:355--369.
+
+\bibitem[{Fronhofer and Altermatt(2015)}]{fronhofer2015eco}
+Fronhofer, E.~A., and F.~Altermatt. 2015.
+\newblock Eco-evolutionary feedbacks during experimental range expansions.
+\newblock Nature communications 6:6844.
+
+\bibitem[{Goddard et~al.(2005)Goddard, Godfray, and Burt}]{goddard2005sex}
+Goddard, M.~R., H.~C.~J. Godfray, and A.~Burt. 2005.
+\newblock Sex increases the efficacy of natural selection in experimental yeast
+  populations.
+\newblock Nature 434:636.
+
+\bibitem[{Hill et~al.(1999)Hill, Thomas, and Lewis}]{hill1999flight}
+Hill, J., C.~Thomas, and O.~Lewis. 1999.
+\newblock Flight morphology in fragmented populations of a rare british
+  butterfly, hesperia comma.
+\newblock Biological Conservation 87:277--283.
+
+\bibitem[{Hulme(2009)}]{hulme2009trade}
+Hulme, P.~E. 2009.
+\newblock Trade, transport and trouble: managing invasive species pathways in
+  an era of globalization.
+\newblock Journal of applied ecology 46:10--18.
 
 \bibitem[{Melbourne and Hastings(2008)}]{melbourne2008extinction}
 Melbourne, B.~A., and A.~Hastings. 2008.
@@ -7,9 +66,93 @@ Melbourne, B.~A., and A.~Hastings. 2008.
   stochasticity.
 \newblock Nature 454:100.
 
+\bibitem[{Ochocki and Miller(2017)}]{ochocki2017rapid}
+Ochocki, B.~M., and T.~E. Miller. 2017.
+\newblock Rapid evolution of dispersal ability makes biological invasions
+  faster and more variable.
+\newblock Nature Communications 8:14315.
+
+\bibitem[{Orr and Otto(1994)}]{orr1994does}
+Orr, H.~A., and S.~P. Otto. 1994.
+\newblock Does diploidy increase the rate of adaptation?
+\newblock Genetics 136:1475--1480.
+
+\bibitem[{Parmesan(2006)}]{parmesan2006ecological}
+Parmesan, C. 2006.
+\newblock Ecological and evolutionary responses to recent climate change.
+\newblock Annual Review of Ecology, Evolution, and Systematics 37:637--669.
+
+\bibitem[{Phillips et~al.(2010)Phillips, Brown, and Shine}]{phillips2010life}
+Phillips, B.~L., G.~P. Brown, and R.~Shine. 2010.
+\newblock Life-history evolution in range-shifting populations.
+\newblock Ecology 91:1617--1627.
+
+\bibitem[{Phillips et~al.(2006)Phillips, Brown, Webb, and
+  Shine}]{phillips2006invasion}
+Phillips, B.~L., G.~P. Brown, J.~K. Webb, and R.~Shine. 2006.
+\newblock Invasion and the evolution of speed in toads.
+\newblock Nature 439:803.
+
+\bibitem[{Pritchard et~al.(2010)Pritchard, Pickrell, and
+  Coop}]{pritchard2010genetics}
+Pritchard, J.~K., J.~K. Pickrell, and G.~Coop. 2010.
+\newblock The genetics of human adaptation: hard sweeps, soft sweeps, and
+  polygenic adaptation.
+\newblock Current biology 20:R208--R215.
+
 \bibitem[{Ricker(1954)}]{ricker1954stock}
 Ricker, W.~E. 1954.
 \newblock Stock and recruitment.
 \newblock Journal of the Fisheries Board of Canada 11:559--623.
+
+\bibitem[{Schloss et~al.(2012)Schloss, Nu{\~n}ez, and
+  Lawler}]{schloss2012dispersal}
+Schloss, C.~A., T.~A. Nu{\~n}ez, and J.~J. Lawler. 2012.
+\newblock Dispersal will limit ability of mammals to track climate change in
+  the western hemisphere.
+\newblock Proceedings of the National Academy of Sciences 109:8606--8611.
+
+\bibitem[{Shaw and Kokko(2015)}]{shaw2015dispersal}
+Shaw, A.~K., and H.~Kokko. 2015.
+\newblock Dispersal evolution in the presence of allee effects can speed up or
+  slow down invasions.
+\newblock The American Naturalist 185:631--639.
+
+\bibitem[{Shine et~al.(2011)Shine, Brown, and Phillips}]{shine2011evolutionary}
+Shine, R., G.~P. Brown, and B.~L. Phillips. 2011.
+\newblock An evolutionary process that assembles phenotypes through space
+  rather than through time.
+\newblock Proceedings of the National Academy of Sciences 108:5708--5711.
+
+\bibitem[{Skellam(1951)}]{skellam1951random}
+Skellam, J.~G. 1951.
+\newblock Random dispersal in theoretical populations.
+\newblock Biometrika 38:196--218.
+
+\bibitem[{Thomas et~al.(2001)Thomas, Bodsworth, Wilson, Simmons, Davies,
+  Musche, and Conradt}]{thomas2001ecological}
+Thomas, C.~D., E.~Bodsworth, R.~J. Wilson, A.~D. Simmons, Z.~G. Davies,
+  M.~Musche, and L.~Conradt. 2001.
+\newblock Ecological and evolutionary processes at expanding range margins.
+\newblock Nature 411:577.
+
+\bibitem[{Weiss-Lehman et~al.(2017)Weiss-Lehman, Hufbauer, and
+  Melbourne}]{weiss2017rapid}
+Weiss-Lehman, C., R.~A. Hufbauer, and B.~A. Melbourne. 2017.
+\newblock Rapid trait evolution drives increased speed and variance in
+  experimental range expansions.
+\newblock Nature Communications 8:14303.
+
+\bibitem[{Williams et~al.(2016)Williams, Kendall, and
+  Levine}]{williams2016rapid}
+Williams, J.~L., B.~E. Kendall, and J.~M. Levine. 2016.
+\newblock Rapid evolution accelerates plant population spread in fragmented
+  experimental landscapes.
+\newblock Science 353:482--485.
+
+\bibitem[{Zeyl et~al.(2003)Zeyl, Vanderford, and Carter}]{zeyl2003evolutionary}
+Zeyl, C., T.~Vanderford, and M.~Carter. 2003.
+\newblock An evolutionary advantage of haploidy in large yeast populations.
+\newblock Science 299:555--558.
 
 \end{thebibliography}

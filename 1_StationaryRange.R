@@ -3,8 +3,8 @@
 #    combinations to be explored.
 
 # Set the number of processors and number of simulations to be run
-nProc <- 24*1
-NumSims <- 23
+nProc <- 24*6
+NumSims <- 100
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -13,69 +13,65 @@ library(Rmpi)
 
 # Now set parameters that will be constant across all simulations
 BetaInit <- 0
-gamma <- 0.1
-tau <- 20
 nu <- 0.001              # Value taken from Gilbert et al. 2017
 sigma <- sqrt(0.02)      # Value taken from Gilbert et al. 2017
 R <- 2
-Kmax <- 50
+Kmax <- 100
 kern <- "exp"
-BurnIn <- 5000
 LengthShift <- 0
 dThresh <- NA
 InitPopSize <- Kmax
 psi <- 0.5
-DispVar <- 2
-dmax <- 10
+dmax <- 6
 rho <- 0.1
 NumRands <- 1000000
-
-# Now set parameters that will change across scenarios
-# This will be done in a more sophisticated way later on
 monoecious <- TRUE
 Haploid <- TRUE
-L <- 1
-omega <- 0
+L <- 5
+omega <- 0.5
+gamma <- 0.01 
+tau <- 2 
+lambda <- 10
+DispVar <- 10
+BurnInSeq <- 5000
+monoecious <- FALSE
 
-Params <- list(BetaInit, gamma, tau, omega, nu, sigma, L, R, Kmax, Haploid, kern,
-               monoecious, BurnIn, LengthShift, dThresh, InitPopSize, psi,
-               DispVar, dmax, rho, NumRands)
-names(Params) <- c("BetaInit", "gamma", "tau", "omega", "nu", "sigma", "L", "R", 
-                   "Kmax", "Haploid", "kern", "monoecious", "BurnIn", "LengthShift", 
-                   "dThresh", "InitPopSize", "psi", "DispVar", "dmax", "rho", "NumRands")
-#AllParams <- vector(mode = "list", length = 9)
+# Now set parameters that will change across these initial scenarios: haploid
+#    and L
+HapSeq <- c(TRUE, FALSE)
+Lseq <- 1:10
+AllParams <- vector(mode = "list", length = length(Lseq) * length(HapSeq))
+k <- 1
+for(h in HapSeq){
+     for(l in Lseq){
+          Haploid <- h
+          L <- l
+          AllParams[[k]] <- list(BetaInit, gamma, tau, omega, nu, sigma, L, R, Kmax, Haploid, kern,
+                                 monoecious, BurnIn, LengthShift, dThresh, InitPopSize, psi,
+                                 DispVar, dmax, rho, lambda, NumRands)
+          names(AllParams[[k]]) <- c("BetaInit", "gamma", "tau", "omega", "nu", "sigma", "L", "R", 
+                                     "Kmax", "Haploid", "kern", "monoecious", "BurnIn", "LengthShift", 
+                                     "dThresh", "InitPopSize", "psi", "DispVar", "dmax", "rho", 
+                                     "lambda", "NumRands")
+          k <- k + 1
+     }
+}
 
-#for(i in 1:9){
-#     gamma <- RangeParams$gamma[i]
-#     lambda <- RangeParams$lambda[i]
-#     tau <- RangeParams$tau[i]
-#     eta <- RangeParams$eta[i]
-     
-#     AllParams[[i]] <- list(BetaInit, gamma, tau, lambda, omega, U, Vm, Lf, Ld, Rmax,
-#                        Kmax, width, kern, EnvGradType, monoecious, BurnIn, BurnOut, 
-#                        LengthShift, v, InitPopSize, FitInit, FitDiv, DispInit,
-#                        DispDiv, eta, NumRands, z, dmax, rho)
-#     names(AllParams[[i]]) <- c("BetaInit", "gamma", "tau", "lambda", "omega", "U", "Vm", 
-#                            "Lf", "Ld", "Rmax", "Kmax", "width", "kern", "EnvGradType", 
-#                            "monoecious", "BurnIn", "BurnOut", "LengthShift", "v", 
-#                            "InitPopSize", "FitInit", "FitDiv", "DispInit", "DispDiv", 
-#                            "eta", "NumRands", "z", "dmax", "rho")
-#}
-
-# Write a function to be passed to various nodes
+# Create the function to be run on the cluster
 SimFunc <- function(i){
-     StationarySim(parameters = Params, parallel = TRUE, SimID = paste("Trial", i, sep = ""))
+     StationarySim(parameters = AllParams[[ParamSeq[i]]], parallel = TRUE)
      return(i)
 }
 
 # Create a vector of parameter index values for the parallel computation
-SimVec <- 1:NumSims
+SimVec <- 1:(NumSims*length(AllParams))
+ParamSeq <- rep(1:length(AllParams), each = NumSims)
 
 # Create the cluster and run the simulations
 cl <- makeCluster(nProc - 1, type = "MPI")
 
 # Export the necessary objects to each node
-clusterExport(cl, c("Params") )
+clusterExport(cl, c("AllParams", "ParamSeq") )
 
 # Change the working directory of the worker nodes
 temp <- clusterEvalQ(cl, source("~/DispersalEvolution/SimFunctions.R") )
