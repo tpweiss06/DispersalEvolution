@@ -27,7 +27,7 @@ DispPhen <- function(PopMat, PopSize, PopIndices, Haploid, L, dmax, rho, lambda)
      # Calculate the sum of the quantitative loci defining dispersal for
      #    each individual, accounting for the different possible cases
      if(PopSize == 1){
-          LociSums <- sum(PopMat[,PopIndices$DispCols])
+          LociSums <- sum(PopMat[PopIndices$DispCols])
      } else{
           if((Haploid == 1) & (L == 1)){
                LociSums <- PopMat[,PopIndices$DispCols]
@@ -469,13 +469,13 @@ PopMatColNames <- function(L, monoecious, Haploid, example = FALSE){
      }
      
      # Create the list and populate it
-     if(monoecious){
+     if(monoecious | Haploid){
           PopIndices <- vector(mode = "list", length = 3)
           names(PopIndices) <- c("x0", "x1", "DispCols")
      } else{
           PopIndices <- vector(mode = "list", length = 4)
           names(PopIndices) <- c("x0", "x1", "DispCols", "sex")
-          PopIndices$sex <- 3 + (2 ^ (1-Haploid))*L
+          PopIndices$sex <- 3 + 2*L
      }
      PopIndices$x0 <- 1
      PopIndices$x1 <- 2
@@ -501,9 +501,6 @@ PopMatColNames <- function(L, monoecious, Haploid, example = FALSE){
 # The full file path for a new directory that the current simulation results will
 #    be saved to
 GetSafeID <- function(ParentDirectory, parallel = FALSE){
-     # Set the working directory to easily scan for directory names
-     setwd(ParentDirectory)
-     
      # Start by trying out 1 and then increase as necessary
      newID <- 1
      
@@ -511,25 +508,23 @@ GetSafeID <- function(ParentDirectory, parallel = FALSE){
      #    current node in the new directory name
      if(parallel){
           NodeName <- Sys.getpid()
-          DirName <- paste(NodeName, "_", "Sim", newID, sep = "")
+          DirName <- paste(ParentDirectory, "/", NodeName, "_Sim", newID, sep = "")
           # Until we find a directory name that does not already exist, continue
           #    to increase the ID variable
           while(dir.exists(DirName)){
                newID <- newID + 1
-               DirName <- paste(NodeName, "_", "Sim", newID, sep = "")
+               DirName <- paste(ParentDirectory, "/", NodeName, "_Sim", newID, sep = "")
           }
      } else{
-          DirName <- paste('Sim', newID, sep='')
+          DirName <- paste(ParentDirectory, "/Sim", newID, sep="")
           while(dir.exists(DirName)){
                newID <- newID + 1
-               DirName <- paste('Sim', newID, sep='')
+               DirName <- paste(ParentDirectory, "/Sim", newID, sep="")
           }
      }
      
-     # Now paste together the ParentDirectory with the new directory for the
-     #    full file path
-     FullPath <- paste(ParentDirectory, DirName, sep = "/")
-     return(FullPath)
+     # Return the identified, safe directory name
+     return(DirName)
 }
 
 ###### SaveParams
@@ -550,9 +545,9 @@ GetSafeID <- function(ParentDirectory, parallel = FALSE){
 SaveParams <- function(parameters, FilePath){
      # First cheack that all necessary parameters are included
      ParamCheck <- names(parameters) == c("BetaInit", "gamma", "tau", "omega",
-                                          "nu", "sigma", "L", "R", "Kmax", "Haploid",
+                                          "U", "sigma", "L", "R", "Kmax", "Haploid",
                                           "kern", "monoecious", "BurnIn",
-                                          "LengthShift", "dThresh", "InitPopSize", "psi",
+                                          "LengthShift", "dThresh", "EdgeThresh", "InitPopSize", "psi",
                                           "DispVar", "dmax", "rho", "lambda", "NumRands")
      if(sum(ParamCheck) != length(ParamCheck)){
           write("Incorrect names or number of input parameters", stderr())
@@ -570,7 +565,7 @@ SaveParams <- function(parameters, FilePath){
      cat("gamma <- ", parameters$gamma, "\n", sep = "")
      cat("tau <- ", parameters$tau, "\n", sep = "")
      cat("omega <- ", parameters$omega, "\n", sep = "")
-     cat("nu <- ", parameters$nu, "\n", sep = "")
+     cat("U <- ", parameters$U, "\n", sep = "")
      cat("sigma <- ", parameters$sigma, "\n", sep = "")
      cat("L <- ", parameters$L, "\n", sep = "")
      cat("R <- ", parameters$R, "\n", sep = "")
@@ -581,6 +576,7 @@ SaveParams <- function(parameters, FilePath){
      cat("BurnIn <- ", parameters$BurnIn, "\n", sep = "")
      cat("LengthShift <- ", parameters$LengthShift, "\n", sep = "")
      cat("dThresh <- ", parameters$dThresh, "\n", sep = "")
+     cat("EdgeThresh <- ", parameters$EdgeThresh, "\n", sep = "")
      cat("InitPopSize <- ", parameters$InitPopSize, "\n", sep = "")
      cat("psi <- ", parameters$psi, "\n", sep = "")
      cat("DispVar <- ", parameters$DispVar, "\n", sep = "")
@@ -611,15 +607,14 @@ SaveParams <- function(parameters, FilePath){
 #         for example, this could be used for trouble shooting and creating "test" sims
 ### OUTPUT
 # The population matrix for the last generation of the simulation
-StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
+StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory = NULL){
      # First generate a safe directory name and create it to save all output
      #    from the simulation
-     CurDirectory <- getwd()
      if(is.na(SimID)){
-          ResultsDir <- GetSafeID(ParentDirectory = CurDirectory, parallel = parallel)
+          ResultsDir <- GetSafeID(ParentDirectory = SimDirectory, parallel = parallel)
           
      } else{
-          ResultsDir <- paste(CurDirectory, SimID, sep = "/")
+          ResultsDir <- paste(SimDirectory, SimID, sep = "/")
      }
      dir.create(ResultsDir)
      
@@ -630,7 +625,11 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      
      # Next, create the population column indices
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
-     NumCols <- 2 + 2^(1-Haploid) * L + (1-monoecious)
+     if(Haploid | monoecious){
+          NumCols <- 2 + 2^(1-Haploid) * L
+     } else{
+          NumCols <- 3 + 2 * L
+     }
      LocusVec <- 1:L
      AlleleVec <- 1:(2^(1-Haploid) * L)
      
@@ -645,6 +644,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
           SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
           SegIndex <- 1
      }
+     nu <- U / (2^(1-Haploid)*L)
      NumMut <- rbinom(n = NumRands, size = 2^(1-Haploid)*L, prob = nu)
      if( !(is.null(PopIndices$sex)) ){
           SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
@@ -789,17 +789,26 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA){
      colnames(PopMat) <- PopMatNames
      write.csv(PopMat, file = paste(ResultsDir, "EquilibriumPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
-     return(NULL)
+     # return the results directory for the simulation to allow for easy sorting
+     return(ResultsDir)
 }
 
 ###### RangeExpand
-RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
+RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumPrefix = NULL,
+                        ExpandPrefix = NULL){
      # Load the necessary parameters
-     source(paste(SimDir, "parameters.R", sep = "/"))
+     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     # Create the results directory
+     ResultsDir <- paste(ExpandPrefix, SimDir, sep = "/")
+     dir.create(ResultsDir)
      
      # Next, create the population column indices
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
-     NumCols <- 2 + 2^(1-Haploid) * L + (1-monoecious)
+     if(Haploid | monoecious){
+          NumCols <- 2 + 2^(1-Haploid) * L
+     } else{
+          NumCols <- 3 + 2 * L
+     }
      LocusVec <- 1:L
      AlleleVec <- 1:(2^(1-Haploid) * L)
      
@@ -814,10 +823,12 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
           SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
           SegIndex <- 1
      }
+     nu <- U / (2^(1-Haploid)*L)
      NumMut <- rbinom(n = NumRands, size = 2^(1-Haploid)*L, prob = nu)
      if( !(is.null(PopIndices$sex)) ){
           SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
      } else{
+          SexRands <- NULL
           if(!Haploid){
                SelfRands <- rbinom(n = NumRands, size = 1, prob = omega)
           }
@@ -827,26 +838,29 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
      DirectIndex <- 1
      
      # Set up an object to hold summary statistics 
-     SumStatCols <- list(gen = 1, beta = 2, x = 3, abund = 4, MuGen = 5,
-                         GenVar = 6, MuPhen = 7, SigmaPhen = 8)
-     SumStatRow <- 1
-     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 8)
+     SumStatCols <- list(dBar = 1, GenVar = 2)
+     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 2)
      CurStatsDim <- SumMatSize
      
      # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
      # Select a random subset of the population from one edge of the population
      #    and set their x0 positions to 0 (i.e. make them founders for the expansion)
-     EdgeInds <- which(PopMat$x0 > (BetaInit + tau))
-     Founders <- sample(EdgeInds, size = Kmax, replace = FALSE)
+     UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
+     EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
+     Founders <- sample(EdgePop, size = Kmax, replace = FALSE)
      PopMat <- PopMat[Founders,]
      PopMat$x0 <- 0
      PopMat <- as.matrix(PopMat)
      PopSize <- nrow(PopMat)
      
-     # Calculate the mean dispersal phenotype of the edge population
+     # Calculate the mean dispersal phenotype and genetic variance of the edge 
+     #    population and store it in the first row of SumStats
      MuDisp <- mean(DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
                            Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda))
+     GenVars <- var(PopMat[,PopIndices$DispCols])
+     SumStats[1,SumStatCols$dBar] <- MuDisp
+     SumStats[1, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
      
      # Now run the simulation
      g <- 1
@@ -882,14 +896,14 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
           PopSize <- sum(RealizedNtp1)
           if(PopSize > 0){
                # Check that the SegVals vectors contain enough values and resample if not
-               if( (SegIndex + PopSize*L) > NumRands ){
+               if( (!Haploid) & ((SegIndex + PopSize*L) > NumRands) ){
                     SegVals[1,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                     SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                     SegIndex <- 1
                }
                # Check the same for the OffspringIndex
                if( (OffspringIndex + PopSize) > NumRands){
-                    NumMut <- rbinom(n = NumRands, size = L, prob = PerLocusProb)
+                    NumMut <- rbinom(n = NumRands, size = L, prob = nu)
                     if( !(is.null(PopIndices$sex)) ){
                          SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
                     }
@@ -900,7 +914,8 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                                     L = L, PopMat = PopMat, LocusVec = LocusVec,
                                     SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
                                     OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
-                                    MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
+                                    MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols,
+                                    SexRands = SexRands)
                # Now update the SegIndices
                SegIndex <- SegIndex + PopSize*L
                # And update the OffspringIndex
@@ -910,57 +925,35 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
           }
           
           # Now extract only the edge individuals from the population matrix
-          #    so as to only track those
-          LastPatch <- max(PopMat[,PopIndices$x0])
-          EdgePop <- which(PopMat[,PopIndices$x0] >= (LastPatch - 2*tau))
-          PopMat <- PopMat[EdgePop,]
+          #    so as to only track those. However, only do this once the population
+          #    has established to a reasonable size to avoid artificially reducing
+          #    the population size we are tracking, thus inducing extinction.
+          if(PopSize > (10*Kmax)){
+               UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
+               EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
+               PopMat <- PopMat[EdgePop,]
+               PopSize <- nrow(PopMat)
+          }
           
           # Record the summary statistics for the current generation
-          NumPatches <- length(OccPatches)
-          if( (SumStatRow + NumPatches) > CurStatsDim){
-               NewMat <- matrix(NA, nrow = SumMatSize, ncol = 8)
+          if( (g+1) > CurStatsDim){
+               NewMat <- matrix(NA, nrow = SumMatSize, ncol = 2)
                SumStats <- rbind(SumStats, NewMat)
                CurStatsDim <- CurStatsDim + SumMatSize
           }
-          for(i in 1:NumPatches){
-               PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
-               PatchPopSize <- length(PatchPop)
-               if(PatchPopSize > 0){
-                    SumStats[SumStatRow, SumStatCols$gen] <- g
-                    SumStats[SumStatRow, SumStatCols$beta] <- BetaShift[g]
-                    SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
-                    SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
-                    SumStats[SumStatRow, SumStatCols$MuGen] <- mean(PopMat[PatchPop, PopIndices$DispCols])
-                    GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
-                    SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
-                    DispPhens <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize,
-                                          PopIndices = PopIndices, Haploid = Haploid,
-                                          L = L, dmax = dmax, rho = rho, lambda = lambda)
-                    MuDisp <- mean(DispPhens)
-                    SumStats[SumStatRow, SumStatCols$MuPhen] <- MuDisp
-                    SumStats[SumStatRow, SumStatCols$SigmaPhen] <- sd(DispPhens)
-                    SumStatRow <- SumStatRow + 1
-               }
-          }
+          MuDisp <- mean(DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
+                                  Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda))
+          GenVars <- var(PopMat[,PopIndices$DispCols])
+          SumStats[g+1,SumStatCols$dBar] <- MuDisp
+          SumStats[g+1, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+          
+          # Advance the simulation to the next generation
           g <- g + 1
      }
      # Save the summary statistics
-     colnames(SumStats) <- c("gen", "beta", "x", "abund", "MuGen", "GenVar",
-                             "MuPhen", "SigmaPhen")
-     SumStats <- SumStats[1:(SumStatRow - 1),]
+     colnames(SumStats) <- c("dBar", "GenVar")
+     SumStats <- SumStats[1:g,]
      write.csv(SumStats, file = paste(ResultsDir, "SummaryStats.csv", sep = "/"),
-               row.names = FALSE, quote = FALSE)
-     
-     # Finally, save the results here
-     PopMatNames <- c("x0", "x1", paste("disp1", 1:L, sep = "_"))
-     if(!Haploid){
-          PopMatNames <- c(PopMatNames, paste("disp2", 1:L, sep = "_"))
-     }
-     if( !(is.null(PopIndices$sex)) ){
-          PopMatNames <- c(PopMatNames, "sex")
-     }
-     colnames(PopMat) <- PopMatNames
-     write.csv(PopMat, file = paste(ResultsDir, "EquilibriumPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      return(NULL)
 }
@@ -975,13 +968,21 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
 #              on a server or not (which affects how file paths are determined).
 ### OUTPUT
 # The population matrix for the last generation of the simulation
-RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
+RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumPrefix = NULL,
+                       ShiftPrefix = NULL){
      # Load the necessary parameters
-     source(paste(SimDir, "parameters.R", sep = "/"))
+     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     # Create the results directory path
+     ResultsDir <- paste(ShiftPrefix, SimDir, sep = "/")
+     dir.create(ResultsDir)
      
      # Next, create the population column indices
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
-     NumCols <- 2 + 2^(1-Haploid) * L + (1-monoecious)
+     if(Haploid | monoecious){
+          NumCols <- 2 + 2^(1-Haploid) * L
+     } else{
+          NumCols <- 3 + 2 * L
+     }
      LocusVec <- 1:L
      AlleleVec <- 1:(2^(1-Haploid) * L)
      
@@ -996,10 +997,12 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
           SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
           SegIndex <- 1
      }
+     nu <- U / (2^(1-Haploid)*L)
      NumMut <- rbinom(n = NumRands, size = 2^(1-Haploid)*L, prob = nu)
      if( !(is.null(PopIndices$sex)) ){
           SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
      } else{
+          SexRands <- NULL
           if(!Haploid){
                SelfRands <- rbinom(n = NumRands, size = 1, prob = omega)
           }
@@ -1022,7 +1025,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
      BetaShift <- ChangeClimate(BetaInit = BetaInit, LengthShift = LengthShift, 
                                 v = v)
      # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
      #PopMat$x1 <- PopMat$x0
      PopMat <- as.matrix(PopMat)
      PopSize <- nrow(PopMat)
@@ -1061,14 +1064,14 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                PopSize <- sum(RealizedNtp1)
                if(PopSize > 0){
                     # Check that the SegVals vectors contain enough values and resample if not
-                    if( (SegIndex + PopSize*L) > NumRands ){
+                    if( (!Haploid) & ((SegIndex + PopSize*L) > NumRands) ){
                          SegVals[1,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                          SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
                          SegIndex <- 1
                     }
                     # Check the same for the OffspringIndex
                     if( (OffspringIndex + PopSize) > NumRands){
-                         NumMut <- rbinom(n = NumRands, size = L, prob = PerLocusProb)
+                         NumMut <- rbinom(n = NumRands, size = L, prob = nu)
                          if( !(is.null(PopIndices$sex)) ){
                               SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
                          }
@@ -1079,7 +1082,8 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
                                          L = L, PopMat = PopMat, LocusVec = LocusVec,
                                          SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
                                          OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
-                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols)
+                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols,
+                                         SexRands = SexRands)
                     # Now update the SegIndices
                     SegIndex <- SegIndex + PopSize*L
                     # And update the OffspringIndex
@@ -1134,7 +1138,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000){
           PopMatNames <- c(PopMatNames, "sex")
      }
      colnames(PopMat) <- PopMatNames
-     write.csv(PopMat, file = paste(ResultsDir, "EquilibriumPopMat.csv", sep = "/"), 
+     write.csv(PopMat, file = paste(ResultsDir, "ShiftedPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      return(NULL)
 }

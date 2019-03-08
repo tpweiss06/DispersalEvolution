@@ -1,19 +1,19 @@
 #!/bin/bash -l
-#PBS -l walltime=15:00:00,nodes=18:ppn=24,mem=500gb
+#PBS -l walltime=10:00:00,nodes=6:ppn=24,mem=372gb
 #PBS -m abe
 #PBS -M cweissle@umn.edu
 #PBS -j oe
 
 # Set the parameter combination to use and generate names of R scripts and log files
-Rscript=1a_MainSim.R
-LogFile=1a_MainSim.log
+Rscript=3_RangeExpand.R
+LogFile=3_RangeExpand.log
 
 # Change to the relevant working directory
-cd ~/ShiftingSlopes/
+cd ~/DispersalEvolution/
 
 # Load R and MPI
 module load R/3.4.4
-module load ompi/3.0.0/gnu-7.2.0
+module load ompi/3.0.0/gnu-7.2.0-centos7
 
 export RMPI_TYPE=OPENMPI
 export OMPI_MCA_mpi_warn_on_fork=0
