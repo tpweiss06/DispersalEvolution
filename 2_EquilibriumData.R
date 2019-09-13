@@ -5,7 +5,7 @@
 #    represent a value requiring evolution to reach, but not overly difficult.
 
 nProc <- 24*1
-NumSims <- 100
+NumSims <- 20
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -16,7 +16,7 @@ library(Rmpi)
 #    NOTE: this section can be adjusted to combine the SimID data from multiple
 #    different simulation runs if necessary by using rbind() and loading in
 #    multiple data frames.
-InFile <- "2019-02-18_Sims.csv"
+InFile <- "2019-03-26_Sims.csv"
 SimData <- read.csv(InFile)
 
 # Make a list with the rows in the SimData matrix corresponding to each
@@ -25,22 +25,37 @@ HapSeq <- unique(SimData$Haploid)
 Lseq <- unique(SimData$L)
 monoeciousSeq <- unique(SimData$monoecious)
 omegaSeq <- unique(SimData$omega)
-ParamCombos <- vector(mode = "list", length = length(HapSeq) * length(Lseq) * 
-                           length(monoeciousSeq) * length(omegaSeq))
+if(length(monoeciousSeq) == 1){
+     if(monoeciousSeq == FALSE){
+          ParamComboLength <- length(HapSeq) * length(Lseq)
+     } else if(monoeciousSeq == TRUE){
+          ParamComboLength <- length(HapSeq) * length(Lseq) * length(omegaSeq)
+     }
+} else if(length(monoeciousSeq) == 2){
+     ParamComboLength <- length(HapSeq) * length(Lseq) + length(omegaSeq) * length(Lseq)
+}
+
+ParamCombos <- vector(mode = "list", length = ParamComboLength)
 k <- 1
 for(h in HapSeq){
      for(l in Lseq){
-          for(m in monoeciousSeq){
-               for(o in omegaSeq){
-                    ParamSims <- which((SimData$Haploid == h) & (SimData$L == l) &
-                                   (SimData$monoecious == m) & (SimData$omega == o))
+          for(o in omegaSeq){
+               if(h == TRUE){
+                    ParamSims <- which((SimData$Haploid == h) & (SimData$L == l) ) #&
+                                            #(SimData$monoecious == TRUE) & (SimData$omega == o))
                     ParamCombos[[k]] <- ParamSims
                     k <- k + 1
+               } else{
+                    for(m in monoeciousSeq){
+                         ParamSims <- which((SimData$Haploid == h) & (SimData$L == l) &
+                         (SimData$monoecious == m) ) #& (SimData$omega == o))
+                         ParamCombos[[k]] <- ParamSims
+                         k <- k + 1
+                    }
                }
           }
      }
 }
-
 
 # For each parameter combination, I want a matrix with a row for every x value
 #    and 3 columns: mean, upper quartile, lower quartile. 
@@ -51,7 +66,8 @@ DispExtract <- function(i){
      xLwr <- Inf
      xUpr <- -Inf
      for(j in 1:nrow(CurSims)){
-          CurData <- read.csv(paste(CurSims$ID[j], "EquilibriumPopMat.csv", sep = "/"))
+          SimID <- strsplit(x = as.character(CurSims$ID[j]), split = "/")[[1]][4]
+          CurData <- read.csv(paste("~/DispersalEvolution/RangeEquilibrium", SimID, "EquilibriumPopMat.csv", sep = "/"))
           xRange <- range(CurData$x0)
           xLwr <- min(xLwr, xRange[1])
           xUpr <- max(xUpr, xRange[2])
@@ -65,28 +81,20 @@ DispExtract <- function(i){
      
      # Now walk through each simulation and population the DispPhens object, starting
      #    by loading in the necessary parameters
-     source(paste(CurSims$ID[1], "parameters.R", sep = "/"))
+     source(paste("~/DispersalEvolution/RangeEquilibrium", SimID, "parameters.R", sep = "/"))
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
      for(j in 1:nrow(CurSims)){
-          CurData <- read.csv(paste(CurSims$ID[j], "EquilibriumPopMat.csv", sep = "/"))
-          for(x in 1:NumPatches){
-               CurX <- subset(CurData, x0 == xVals[x])
+          CurData <- read.csv(paste("~/DispersalEvolution/RangeEquilibrium", SimID, "EquilibriumPopMat.csv", sep = "/"))
+          for(k in 1:NumPatches){
+               CurX <- subset(CurData, x0 == xVals[k])
                # Only proceed if the current simulation has individuals in that patch
                if(dim(CurX)[1] > 0){
-                    # Calculate the genotypes of local individuals
-                    if((L == 1) & (Haploid)){
-                         genotypes <- CurX[,PopIndices$DispCols]
-                    }else{
-                         if(nrow(CurX) > 1){
-                              genotypes <- rowSums(CurX[,PopIndices$DispCols])
-                         } else{
-                              genotypes <- sum(CurX[,PopIndices$DispCols])
-                         }
-                    }
-                    # Now calculate the genotypes and add them to the appropriate entry
-                    #    of DispPhens
-                    phenotypes <- (dmax * exp(rho * genotypes)) / (1 + exp(rho * genotypes))
-                    DispPhens[[x]] <- c(DispPhens[[x]], phenotypes)
+                    # Calculate the phenotypes of local individuals and add them
+                    #    to the appropriate entry of DispPhens
+                    phenotypes <- DispPhen(PopMat = as.matrix(CurX), 
+                                           PopSize = nrow(CurX), PopIndices = PopIndices, 
+                                           Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+                    DispPhens[[k]] <- c(DispPhens[[k]], phenotypes)
                }
           }
      }

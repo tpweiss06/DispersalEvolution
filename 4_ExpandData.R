@@ -1,11 +1,9 @@
 # This script will extract information on the spatial distribution of dispersal
-#    phenotypes from the equilibrium ranges to (1) assess equilibrium conditions
-#    across different parameerizations and confirm that all have reached similar
-#    spatial distributions and (2) determine a reasonable value for dThresh to 
-#    represent a value requiring evolution to reach, but not overly difficult.
+#    phenotypes during the range expansion simulations
 
-nProc <- 24*1
-NumSims <- 100
+# Set the in and outfiles for the simulations and data
+InFile <- ""
+OutFile <- ""
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -13,91 +11,119 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-#    NOTE: this section can be adjusted to combine the SimID data from multiple
-#    different simulation runs if necessary by using rbind() and loading in
-#    multiple data frames.
-InFile <- "2019-02-18_Sims.csv"
 SimData <- read.csv(InFile)
 
 # Make a list with the rows in the SimData matrix corresponding to each
 #    parameter combination
-HapSeq <- unique(SimData$Haploid)
 Lseq <- unique(SimData$L)
-monoeciousSeq <- unique(SimData$monoecious)
-omegaSeq <- unique(SimData$omega)
-ParamCombos <- vector(mode = "list", length = length(HapSeq) * length(Lseq) * 
-                           length(monoeciousSeq) * length(omegaSeq))
-k <- 1
-for(h in HapSeq){
-     for(l in Lseq){
-          for(m in monoeciousSeq){
-               for(o in omegaSeq){
-                    ParamSims <- which((SimData$Haploid == h) & (SimData$L == l) &
-                                   (SimData$monoecious == m) & (SimData$omega == o))
-                    ParamCombos[[k]] <- ParamSims
-                    k <- k + 1
-               }
-          }
-     }
+#omegaSeq <- unique(SimData$omega)
+ParamCombos <- vector(mode = "list", length = length(Lseq))
+for(l in 1:length(Lseq)){
+     ParamCombos[[l]] <- which( (SimData$L == Lseq[l]) )
 }
 
-# For each parameter combination, I want a matrix with a row for every time point
-#    and 7 columns: mean, upper quartile, lower quartile for dbar and GenVar,
-#    and a last column with the number of simulations still running at
-#    each time point. Additionally, the function will return a vector with the
-#    time to evolution of dThresh for each simulation.
-ExpandExtract <- function(i){
-     # First, read in the different expansion data and record the last time
-     #    point of each simulation
+# Set the number of processors needed for the number of parameter combinations
+nProc <- length(ParamCombos) + 1
+
+# Create other objects to be passed to the function
+ExampleParams <- paste(SimData$ID[1], "/parameters.R", sep = "")
+source(ExampleParams)
+Gens <- seq(0, ExpandGens, by = ExpandGens/10)
+Ngens <- length(Gens)
+
+# For each parameter combination, the function will return a list with an entry
+#    for each time point consisting of a data frame with columns for x coordinate,
+#    mean phenotype, lower IQR, and upper IQR.
+DispExtract <- function(i){
+     # First, subset the simulations corresponding to the current parameter
+     #    combination and record the x bounds through time (to construct the
+     #    data frames later)
      CurSims <- SimData[ParamCombos[[i]],]
-     EvolTimes <- rep(NA, nrow(CurSims))
-     for(j in 1:nrow(CurSims)){
-          CurData <- read.csv(paste(CurSims$ID[j], "SummaryStats.csv", sep = "/"))
-          EvolTimes[j] <- nrow(CurData) - 1
+     Nsims <- nrow(CurSims)
+     xLwr <- rep(Inf, Ngens)
+     xUpr <- rep(-Inf, Ngens)
+     for(t in 1:Ngens){
+          for(j in 1:Nsims){
+               SimID <- strsplit(x = as.character(CurSims$ID[j]), split = "/")[[1]][4]
+               CurFile <- paste("~/DispersalEvolution/RangeExpansion", SimID, "SummaryStats.csv", sep = "/")
+               CurData <- read.csv(CurFile)
+               CurData <- subset(CurData, gen == Gens[t])
+               xRange <- range(CurData$x)
+               xLwr[t] <- min(xLwr[t], xRange[1])
+               xUpr[t] <- max(xUpr[t], xRange[2])
+          }
      }
      rm(CurData)
      
-     # Now make the matrix to hold the values through time
-     ExpandVals <- matrix(NA, nrow = max(EvolTimes) + 1, ncol = 7)
-     for(t in 1:nrow(ExpandVals)){
-          Sim_dBar <- rep(NA, nrow(CurSims))
-          Sim_GenVar <- rep(NA, nrow(CurSims))
-          for(j in 1:nrow(CurSims)){
-               CurData <- read.csv(paste(CurSims$ID[j], "SummaryStats.csv", sep = "/"))
-               if(t <= nrow(CurData)){
-                    Sim_dBar[j] <- CurData$dBar[t]
-                    Siim_GenVar[j] <- CurData$GenVar[t]
+     # Construct the list to hold the results through time and load parameters
+     DispPhens <- vector(length = Ngens, mode = "list")
+     DispGenVar <- vector(length = Ngens, mode = "list")
+     source(paste("~/DispersalEvolution/RangeEquilibrium", SimID, "parameters.R", sep = "/"))
+     PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
+     
+     # Now walk through time, filling the list with information from all simulations
+     for(t in 1:Ngens){
+          CurXseq <- xLwr[t]:xUpr[t]
+          N <- length(CurXseq)
+          DispPhens[[t]] <- data.frame(x = CurXseq, dBar = rep(NA, N), 
+                                       lwr = rep(NA, N), upr = rep(NA, N))
+          DispGenVar[[t]] <- data.frame(x = CurXseq, GenVar = rep(NA, N), 
+                                        lwr = rep(NA, N), upr = rep(NA, N))
+          
+          # Create matrices to hold the mean values in each patch from each 
+          #    simulation and step through the simulations to fill them up
+          All_dBars <- matrix(NA, nrow = N, ncol = Nsims)
+          AllGenVar <- matrix(NA, nrow = N, ncol = Nsims)
+          for(j in 1:Nsims){
+               SimID <- strsplit(x = as.character(CurSims$ID[j]), split = "/")[[1]][4]
+               CurFile <- paste("~/DispersalEvolution/RangeExpansion", SimID, "SummaryStats.csv", sep = "/")
+               CurData <- read.csv(CurFile)
+               CurData <- subset(CurData, gen == Gens[t])
+               for(x in 1:N){
+                    CurLoc <- which(CurData$x == CurXseq[x])
+                    if(length(CurLoc) != 0){
+                         All_dBars[x,j] <- CurData$dBar[CurLoc]
+                         if(CurData$abund[CurLoc] >= 10){
+                              AllGenVar[x,j] <- CurData$GenVar[CurLoc]
+                         }
+                    }
                }
           }
           rm(CurData)
-          ExpandVals[t,1] <- mean(Sim_dBar, na.rm = TRUE)
-          ExpandVals[t,2:3] <- quantile(Sim_dBar, probs = c(0.25,0.75), na.rm = TRUE)
-          ExpandVals[t,4] <- mean(Sim_GenVar, na.rm = TRUE)
-          ExpandVals[t,5:6] <- quantile(Sim_GenVar, probs = c(0.25,0.75), na.rm = TRUE)
-          ExpandVals[t,7] <- sum(!is.na(Sim_dBar))
+          
+          # Now, calculate the summary statistics across simulations for the
+          #    current generation
+          for(x in 1:N){
+               DispPhens[[t]]$dBar[x] <- mean(All_dBars[x,], na.rm = TRUE)
+               dBarIQR <- quantile(All_dBars[x,], probs = c(0.25, 0.75), na.rm = TRUE)
+               DispPhens[[t]]$lwr[x] <- dBarIQR[1]
+               DispPhens[[t]]$upr[x] <- dBarIQR[2]
+               
+               DispGenVar[[t]]$GenVar[x] <- mean(AllGenVar[x,], na.rm = TRUE)
+               GenVarIQR <- quantile(AllGenVar[x,], probs = c(0.25, 0.75), na.rm = TRUE)
+               DispGenVar[[t]]$lwr[x] <- GenVarIQR[1]
+               DispGenVar[[t]]$upr[x] <- GenVarIQR[2]
+          }
      }
-     # Now add column names to ExpandVals
-     colnames(ExpandVals) <- c("dBar_mu","dBar_lwr", "dBar_upr", "GenVar_mu", 
-                               "GenVar_lwr", "GenVar_upr", "N")
      
-     # Put it all together and return it
-     Results <- list(ExpandVals = ExpandVals, EvolTimes = EvolTimes)
-     return(Results)
+     # Put everything together to return
+     DispSummary <- list(dBar = DispPhens, GenVar = DispGenVar)
+     return(DispSummary)
 }
 
 # Create the cluster and run the extractions
 cl <- makeCluster(nProc - 1, type = "MPI")
 
 # Export the necessary objects to each node
-clusterExport(cl, c("SimData", "ParamCombos") )
+clusterExport(cl, c("SimData", "ParamCombos", "Gens", "Ngens") )
 
 # Change the working directory of the worker nodes
 temp <- clusterEvalQ(cl, source("~/DispersalEvolution/SimFunctions.R") )
 
 # Run the extractions
 ExtractVec <- 1:length(ParamCombos)
-ExpandData <- clusterApply(cl, x = ExtractVec, fun = ExpandExtract)
+DispData <- clusterApply(cl, x = ExtractVec, fun = DispExtract)
 
 # Save the list returned by clusterApply for graphing
-save(ExpandData, ParamCombos, SimData, file = "ExpansionData.rdata")
+save(DispData, ParamCombos, SimData, file = OutFile)
 

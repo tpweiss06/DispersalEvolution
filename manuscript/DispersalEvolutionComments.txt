@@ -1,0 +1,47 @@
+Comments from lab meeting
+
+- Transition from range expansion to range shifts could be clearer with the explanation of range expansion vs. range shift
+
+- last sentence of first paragraph makes it feel like I'm going to only be talking about range expansions
+
+- Could also read like I'm building up to shifts from expansions. Need to really clarify expansion vs. shifts
+
+- Clarify that the goal is does dispersal evolution keep up with climate change
+
+- Maybe refocus introduction to be more about range shifts and climate change and bring in range expansions later as purely a baseline.
+
+- potential framing (we're interested in shifts and to understand what happend we think about expansions)
+
+- Keep the narrative a bit more focused on climate change and that big important question
+
+- offer more precise definitions up front (e.g. edge populations)
+
+- clearer description of problem in lines 30 ish
+
+- clarifying the relationship of the current study to previous research
+
+- take more time to introduce the factors we vary in the model
+
+- maybe use the phrase "efficiency of selection" to describe the issue
+
+- clarify the phrasing for "two species of wood crickets and the speckled wood butterfly"
+
+- Lines 72-77 can be confusing based on the relationship between shifts and expansions
+
+- maybe put more of the simulation experiment/description after the model description with a clear description of why it's set up in that way
+
+- explain "dispersal phenotype" earlier in the model 
+
+- remind people that parentage is assigned from patch and clarify line 90 sentence
+
+- add in the details of "stochastic reproduction"
+
+- In line 104, "inheritence of loci" should be "inheritence of alleles"
+
+- In line 105, say what section instead of "described below"
+
+- Maybe a bit more justification for not considering environmental stochasticity (or just not mention environmental stochasticity)
+
+- Make sure Beta is clearly defined as a function of t
+
+- Define sigma L in the dispersal section

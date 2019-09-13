@@ -1,9 +1,15 @@
 # This script will run simulations on the MSI compute cluster to characterize
 #    population structure in a stable range for all parameter combinations.
 
+# Set the type of organisms to be simulated
+# NOTE: Haploid is always associated with a monoecious value of TRUE even though
+#    it has no meaning for haploid organisms.
+Haploid <- FALSE
+monoecious <- FALSE
+
 # Set the number of processors and number of simulations to be run
 nProc <- 24*6
-NumSims <- 20
+NumSims <- 100
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -15,43 +21,34 @@ BetaInit <- 0
 U <- 0.02                # Value taken from Gilbert et al. 2017
 sigma <- sqrt(0.02)      # Value taken from Gilbert et al. 2017
 R <- 2
-Kmax <- 50
+Kmax <- 100
 kern <- "exp"
-LengthShift <- 100
-InitPopSize <- Kmax
+LengthShift <- 200
 psi <- 0.5
 dmax <- 6
-dThresh <- 3.5
-EdgeThresh <- 0.95
+ExpandGens <- 200
 rho <- 0.1
 NumRands <- 1000000
-omega <- 0.5
+omega <- 1
 gamma <- 0.02 
 tau <- 15 
 lambda <- 10
 DispVar <- 10
-BurnIn <- 5000
-monoecious <- FALSE
+BurnIn <- 50000
+v <- 2
 
-# Now set parameters that will change across these initial scenarios: haploid
-#    and L
-HapSeq <- c(TRUE, FALSE)
-Lseq <- 1:10
-AllParams <- vector(mode = "list", length = length(Lseq) * length(HapSeq))
-k <- 1
-for(h in HapSeq){
-     for(l in Lseq){
-          Haploid <- h
-          L <- l
-          AllParams[[k]] <- list(BetaInit, gamma, tau, omega, U, sigma, L, R, Kmax, Haploid, kern,
-                                 monoecious, BurnIn, LengthShift, dThresh, EdgeThresh, InitPopSize, psi,
-                                 DispVar, dmax, rho, lambda, NumRands)
-          names(AllParams[[k]]) <- c("BetaInit", "gamma", "tau", "omega", "U", "sigma", "L", "R", 
-                                     "Kmax", "Haploid", "kern", "monoecious", "BurnIn", "LengthShift", 
-                                     "dThresh", "EdgeThresh", "InitPopSize", "psi", "DispVar", "dmax", "rho", 
-                                     "lambda", "NumRands")
-          k <- k + 1
-     }
+# Now set the L values to be used across simulations
+Lseq <- c(1, 2, 4, 8, 16, 32)
+AllParams <- vector(mode = "list", length = length(Lseq))
+for(l in 1:length(Lseq)){
+     L <- Lseq[l]
+     AllParams[[l]] <- list(BetaInit, gamma, tau, omega, U, sigma, L, R, Kmax, Haploid, kern,
+                            monoecious, BurnIn, LengthShift, ExpandGens, psi,
+                            DispVar, dmax, rho, lambda, NumRands, v)
+     names(AllParams[[l]]) <- c("BetaInit", "gamma", "tau", "omega", "U", "sigma", "L", "R", 
+                                "Kmax", "Haploid", "kern", "monoecious", "BurnIn", "LengthShift", 
+                                "ExpandGens", "psi", "DispVar", "dmax", "rho", 
+                                "lambda", "NumRands", "v")
 }
 
 # Create the function to be run on the cluster
@@ -62,7 +59,7 @@ SimFunc <- function(i){
                             SimDirectory = SimDir)
      SimInfo <- list(ID = SimID, L = CurParams$L, Haploid = CurParams$Haploid,
                      monoecious = CurParams$monoecious, omega = CurParams$omega)
-     # Return a list with the SimID, loci, ploidy, monoecious, omega? (selfing parameter)
+     # Return a list with the SimID, loci, ploidy, monoecious, and omega values
      return(SimInfo)
 }
 
@@ -95,7 +92,7 @@ for(i in 1:TotalSims){
      SimIDs$omega[i] <- Sims[[i]]$omega
 }
 
-OutFile <- paste(Sys.Date(), "Sims.csv", sep = "_")
+OutFile <- paste(Sys.Date(), "DiploidDioSims.csv", sep = "_")
 write.csv(SimIDs, file = OutFile)
 
 # This implementation of openMPI doesn't seem to play nice with Rmpi,

@@ -1,5 +1,8 @@
 # This script will run range expansion simulations on the MSI compute cluster.
 
+# Set the infile
+InFile <- ""
+
 # Set the number of processors
 nProc <- 24*6
 
@@ -9,17 +12,13 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-#    NOTE: this section can be adjusted to combine the SimID data from multiple
-#    different simulation runs if necessary by using rbind() and loading in
-#    multiple data frames.
-InFile <- ""
 SimData <- read.csv(InFile)
 
 # Create the function to be run on the cluster
 SimFunc <- function(i){
-     SimID <- SimData$ID[i]
-     StationarySim(SimDir = SimID, parallel = TRUE, EquilibriumPrefix = "RangeEquilibrium",
-                    ExpandPrefix = "RangeExpand")
+     SimID <- strsplit(x = as.character(SimData$ID[i]), split = "/")[[1]][4]
+     RangeExpand(SimDir = SimID, parallel = TRUE, EquilibriumPrefix = "~/DispersalEvolution/RangeEquilibrium",
+                    ExpandPrefix = "~/DispersalEvolution/RangeExpansion")
      return(NULL)
 }
 

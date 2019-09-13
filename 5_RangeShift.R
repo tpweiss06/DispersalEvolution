@@ -1,5 +1,9 @@
 # This script will run range expansion simulations on the MSI compute cluster.
 
+# Set the in file
+InFile <- "2019-06-26_DiploidDioSims.csv"
+IncreasedSpeed <- 3
+
 # Set the number of processors
 nProc <- 24*6
 
@@ -9,10 +13,6 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-#    NOTE: this section can be adjusted to combine the SimID data from multiple
-#    different simulation runs if necessary by using rbind() and loading in
-#    multiple data frames.
-InFile <- "2019-02-18_Sims.csv"
 SimData <- read.csv(InFile)
 
 # Create the function to be run on the cluster
@@ -20,7 +20,8 @@ SimFunc <- function(i){
      SimID <- strsplit(x = as.character(SimData$ID[i]), split = "/")[[1]][4]
      RangeShift(SimDir = SimID, parallel = TRUE, 
                    EquilibriumPrefix = "~/DispersalEvolution/RangeEquilibrium",
-                   ShiftPrefix = "~/DispersalEvolution/RangeShift")
+                   ShiftPrefix = "~/DispersalEvolution/RangeShift",
+                NewSpeed = IncreasedSpeed)
      return(NULL)
 }
 
@@ -31,7 +32,7 @@ SimVec <- 1:nrow(SimData)
 cl <- makeCluster(nProc - 1, type = "MPI")
 
 # Export the necessary objects to each node
-clusterExport(cl, "SimData" )
+clusterExport(cl, c("SimData", "IncreasedSpeed") )
 
 # Change the working directory of the worker nodes
 temp <- clusterEvalQ(cl, source("~/DispersalEvolution/SimFunctions.R") )

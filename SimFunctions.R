@@ -250,8 +250,10 @@ NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, Lo
                } else{
                     NewPopMat[CurVec, PopIndices$sex] <- SexRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
                     # Identify the females and males present in the current patch
-                    females <- which(PopMat[locals, PopIndices$sex] == 1)
-                    males <- which(PopMat[locals, PopIndices$sex] == 0)
+                    females <- which( (PopMat[,PopIndices$x1] == OccPatches[NewOccPatches[i]]) &
+                                           (PopMat[, PopIndices$sex] == 1) )
+                    males <- which( (PopMat[,PopIndices$x1] == OccPatches[NewOccPatches[i]]) &
+                                         (PopMat[, PopIndices$sex] == 0) )
                     if(length(females) == 1){
                          parent1 <- rep(females, Ntp1[i])
                     }else{
@@ -340,6 +342,45 @@ DipInherit <- function(PopIndices, parents, PopMat, PatchPop, L, SegVals, Allele
      return(OffspringAlleles)
 }
 
+###### NextPopMatNoEvol
+# This function will produce a new PopMat for the next generation, but with no evolution.
+#    Alleles will be drawn from the vectors representing their frequencies at the
+#    beginning of the simulation.
+### INPUTS
+# InitAlleles: A matrix with a column for each allele containing all the allele
+#              values from the initial population for the simulation
+# Ntp1, PopIndices, OccPatches, SumNtp1, NumCols, OffspringIndex, and SexRands 
+#    are all as defined before
+### OUTPUTS
+# This function returns a new population matrix with the same columns but with
+#    updated row information for the next generation.
+NextPopMatNoEvol <- function(Ntp1, PopIndices, OccPatches, SumNtp1, NumCols, SexRands,
+                             InitAlleles, OffspringIndex){
+     NewPopMat <- matrix(NA, nrow = SumNtp1, ncol = NumCols)
+     # Filter for only the patches that produced offspring and fill in the matrix
+     NewOccPatches <- which(Ntp1 > 0)
+     Ntp1 <- Ntp1[NewOccPatches]
+     StartRow <- 1
+     EndRow <- Ntp1[1]
+     for(i in 1:length(NewOccPatches)){
+          CurVec <- StartRow:EndRow
+          # Fill in the location details
+          NewPopMat[CurVec, PopIndices$x0] <- OccPatches[NewOccPatches[i]]
+          # Fill in the sex column
+          if(!is.null(PopIndices$sex)){
+               NewPopMat[CurVec, PopIndices$sex] <- SexRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
+          }
+          # Update the starting and ending row for the next iteration of the loop
+          StartRow <- EndRow + 1
+          EndRow <- EndRow + Ntp1[i+1]
+     }
+     # Fill in the allele columns
+     for(j in 1:length(PopIndices$DispCols)){
+          NewPopMat[,PopIndices$DispCols[j]] <- sample(InitAlleles[,j], size = SumNtp1, replace = TRUE)
+     }
+     return(NewPopMat)
+}
+
 # ------------------------------------------------------------------------------
 # -------------------------- Environmental Functions ---------------------------
 # ------------------------------------------------------------------------------
@@ -419,17 +460,33 @@ ChangeClimate <- function(BetaInit, LengthShift, v){
 #                   the commonly used simulation platform QuantiNemo
 ### OUTPUTS
 # A filled in population matrix to start generation 0
-Initialize <- function(PopIndices, PopSize, BetaInit, psi, DispVar, A = 255, NumCols){
-     # First make an empty population matrix with the correct names
-     PopMat <- matrix(NA, nrow = PopSize, ncol = NumCols)
+Initialize <- function(PopIndices, BetaInit, psi, DispVar, A = 255, NumCols,
+                       tau, gamma, Kmax, R){
+     # First determine the number of individuals to initialize by calculating
+     #    the realized carrying capacity of each patch to be occupied in the
+     #    stable range
+     xSeq <- -75:75
+     AlphaVals <- PatchAlphas(OccPatches = xSeq, NumPatches = length(xSeq), CurBeta = BetaInit,
+                              tau = tau, gamma = gamma, Kmax = Kmax, R = R)
+     Kvals <- as.integer(log(R) / AlphaVals)
+     TotalPop <- sum(Kvals)
+     
+     # Now make an empty population matrix with the correct names
+     PopMat <- matrix(NA, nrow = TotalPop, ncol = NumCols)
      
      # Next, fill in the x1 column for the founders (the founders are
      #    considered post dispersal and will reproduce next)
-     PopMat[,PopIndices$x1] <- BetaInit
+     PopIndex <- 1
+     for(k in 1:length(Kvals)){
+          if(Kvals[k] > 0){
+               PopMat[PopIndex:(PopIndex + Kvals[k] - 1), PopIndices$x1] <- xSeq[k]
+               PopIndex <- PopIndex + Kvals[k]
+          }
+     }
      
      # Fill in the sex column if it is present
      if( !(is.null(PopIndices$sex)) ){
-          PopMat[,PopIndices$sex] <- rbinom(n = PopSize, size = 1, prob = psi)
+          PopMat[,PopIndices$sex] <- rbinom(n = TotalPop, size = 1, prob = psi)
      }
      
      # Now fill in the dispersal allele columns and return the matrix
@@ -437,7 +494,7 @@ Initialize <- function(PopIndices, PopSize, BetaInit, psi, DispVar, A = 255, Num
      AlleleVals <- seq(-6*sigma, 6*sigma, length.out = A)
      InitFreqProbs <- dnorm(x = AlleleVals, mean = 0, sd = sigma)
      for(i in PopIndices$DispCols){
-          PopMat[,i] <- sample(AlleleVals, size = PopSize, replace = TRUE, prob = InitFreqProbs)
+          PopMat[,i] <- sample(AlleleVals, size = TotalPop, replace = TRUE, prob = InitFreqProbs)
      }
      return(PopMat)
 }
@@ -547,8 +604,8 @@ SaveParams <- function(parameters, FilePath){
      ParamCheck <- names(parameters) == c("BetaInit", "gamma", "tau", "omega",
                                           "U", "sigma", "L", "R", "Kmax", "Haploid",
                                           "kern", "monoecious", "BurnIn",
-                                          "LengthShift", "dThresh", "EdgeThresh", "InitPopSize", "psi",
-                                          "DispVar", "dmax", "rho", "lambda", "NumRands")
+                                          "LengthShift", "ExpandGens", "psi",
+                                          "DispVar", "dmax", "rho", "lambda", "NumRands", "v")
      if(sum(ParamCheck) != length(ParamCheck)){
           write("Incorrect names or number of input parameters", stderr())
           return(NULL)
@@ -575,15 +632,14 @@ SaveParams <- function(parameters, FilePath){
      cat("monoecious <- ", parameters$monoecious, "\n", sep = "")
      cat("BurnIn <- ", parameters$BurnIn, "\n", sep = "")
      cat("LengthShift <- ", parameters$LengthShift, "\n", sep = "")
-     cat("dThresh <- ", parameters$dThresh, "\n", sep = "")
-     cat("EdgeThresh <- ", parameters$EdgeThresh, "\n", sep = "")
-     cat("InitPopSize <- ", parameters$InitPopSize, "\n", sep = "")
+     cat("ExpandGens <- ", parameters$ExpandGens, "\n", sep = "")
      cat("psi <- ", parameters$psi, "\n", sep = "")
      cat("DispVar <- ", parameters$DispVar, "\n", sep = "")
      cat("dmax <- ", parameters$dmax, "\n", sep = "")
      cat("rho <- ", parameters$rho, "\n", sep = "")
      cat("lambda <- ", parameters$lambda, "\n", sep = "")
      cat("NumRands <- ", parameters$NumRands, "\n", sep = "")
+     cat("v <- ", parameters$v, "\n", sep = "")
      sink()
 }
 
@@ -660,12 +716,12 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory
      
      # Next initialize the generation 0 founding population and calculate dispersal
      #    phenotypes
-     PopMat <- Initialize(PopIndices = PopIndices, PopSize = InitPopSize, NumCols = NumCols,
-                          BetaInit = BetaInit, DispVar = DispVar, psi = psi)
+     PopMat <- Initialize(PopIndices = PopIndices, NumCols = NumCols,
+                          BetaInit = BetaInit, DispVar = DispVar, psi = psi, 
+                          tau = tau, gamma = gamma, Kmax = Kmax, R = R)
      PopSize <- nrow(PopMat)
      
-     # Generate the matrix of occupied patches and get the relative fitness of
-     #    each individual
+     # Generate the vector of occupied patches
      OccPatches <- unique(PopMat[,PopIndices$x1])
      
      # Generate the population sizes for the next generation
@@ -798,6 +854,7 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
                         ExpandPrefix = NULL){
      # Load the necessary parameters
      source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     
      # Create the results directory
      ResultsDir <- paste(ExpandPrefix, SimDir, sep = "/")
      dir.create(ResultsDir)
@@ -838,33 +895,43 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
      DirectIndex <- 1
      
      # Set up an object to hold summary statistics 
-     SumStatCols <- list(dBar = 1, GenVar = 2)
-     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 2)
+     SumStatCols <- list(x = 1, gen = 2, abund = 3, dBar = 4, GenVar = 5)
+     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 5)
      CurStatsDim <- SumMatSize
+     SumStatRow <- 1
      
      # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
-     # Select a random subset of the population from one edge of the population
-     #    and set their x0 positions to 0 (i.e. make them founders for the expansion)
-     UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
-     EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
-     Founders <- sample(EdgePop, size = Kmax, replace = FALSE)
-     PopMat <- PopMat[Founders,]
-     PopMat$x0 <- 0
-     PopMat <- as.matrix(PopMat)
+     InputMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- as.matrix(InputMat)
      PopSize <- nrow(PopMat)
      
-     # Calculate the mean dispersal phenotype and genetic variance of the edge 
-     #    population and store it in the first row of SumStats
-     MuDisp <- mean(DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                           Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda))
-     GenVars <- var(PopMat[,PopIndices$DispCols])
-     SumStats[1,SumStatCols$dBar] <- MuDisp
-     SumStats[1, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+     # Calculate the mean dispersal phenotypes and genetic variances throughout
+     #    the population and store them in the first rows of SumStats
+     OccPatches <- unique(PopMat[,PopIndices$x0])
+     NumPatches <- length(OccPatches)
+     if( (SumStatRow + NumPatches) > CurStatsDim){
+          NewMat <- matrix(NA, nrow = SumMatSize, ncol = 5)
+          SumStats <- rbind(SumStats, NewMat)
+          CurStatsDim <- CurStatsDim + SumMatSize
+     }
+     for(i in 1:NumPatches){
+          PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
+          PatchPopSize <- length(PatchPop)
+          if(PatchPopSize > 0){
+               SumStats[SumStatRow, SumStatCols$gen] <- 0
+               SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
+               SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
+               GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
+               SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+               Disps <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize, PopIndices = PopIndices, 
+                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+               SumStats[SumStatRow, SumStatCols$dBar] <- mean(Disps)
+               SumStatRow <- SumStatRow + 1
+          }
+     }
      
      # Now run the simulation
-     g <- 1
-     while((MuDisp < dThresh) & (PopSize > 0)){
+     for(g in 1:ExpandGens){
           disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
                             Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
                
@@ -886,7 +953,7 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
           # Generate the matrix of occupied patches and get population numbers
           #    for the next generation
           OccPatches <- unique(PopMat[,PopIndices$x1])
-          RealizedNtp1 <- Reproduce(CurBeta = BetaShift[g], gamma = gamma, tau = tau,
+          RealizedNtp1 <- Reproduce(CurBeta = BetaInit, gamma = gamma, tau = tau,
                                     R = R, Kmax = Kmax, PopMat = PopMat,
                                     PopIndices = PopIndices, psi = psi,
                                     OccPatches = OccPatches, Haploid = Haploid,
@@ -928,31 +995,39 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
           #    so as to only track those. However, only do this once the population
           #    has established to a reasonable size to avoid artificially reducing
           #    the population size we are tracking, thus inducing extinction.
-          if(PopSize > (10*Kmax)){
-               UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
-               EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
-               PopMat <- PopMat[EdgePop,]
-               PopSize <- nrow(PopMat)
-          }
+          #if(PopSize > (50*Kmax)){
+          #     UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
+          #     EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
+          #     PopMat <- PopMat[EdgePop,]
+          #     PopSize <- nrow(PopMat)
+          #}
           
           # Record the summary statistics for the current generation
-          if( (g+1) > CurStatsDim){
-               NewMat <- matrix(NA, nrow = SumMatSize, ncol = 2)
+          NumPatches <- length(OccPatches)
+          if( (SumStatRow + NumPatches) > CurStatsDim){
+               NewMat <- matrix(NA, nrow = SumMatSize, ncol = 5)
                SumStats <- rbind(SumStats, NewMat)
                CurStatsDim <- CurStatsDim + SumMatSize
           }
-          MuDisp <- mean(DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
-                                  Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda))
-          GenVars <- var(PopMat[,PopIndices$DispCols])
-          SumStats[g+1,SumStatCols$dBar] <- MuDisp
-          SumStats[g+1, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
-          
-          # Advance the simulation to the next generation
-          g <- g + 1
+          for(i in 1:NumPatches){
+               PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
+               PatchPopSize <- length(PatchPop)
+               if(PatchPopSize > 0){
+                    SumStats[SumStatRow, SumStatCols$gen] <- g
+                    SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
+                    SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
+                    GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
+                    SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+                    Disps <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize, PopIndices = PopIndices, 
+                                      Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+                    SumStats[SumStatRow, SumStatCols$dBar] <- mean(Disps)
+                    SumStatRow <- SumStatRow + 1
+               }
+          }
      }
      # Save the summary statistics
-     colnames(SumStats) <- c("dBar", "GenVar")
-     SumStats <- SumStats[1:g,]
+     colnames(SumStats) <- c("x", "gen", "abund", "dBar", "GenVar")
+     SumStats <- SumStats[1:(SumStatRow - 1),]
      write.csv(SumStats, file = paste(ResultsDir, "SummaryStats.csv", sep = "/"),
                row.names = FALSE, quote = FALSE)
      return(NULL)
@@ -969,9 +1044,12 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
 ### OUTPUT
 # The population matrix for the last generation of the simulation
 RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumPrefix = NULL,
-                       ShiftPrefix = NULL){
+                       ShiftPrefix = NULL, NewSpeed = NA){
      # Load the necessary parameters
      source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     if(!is.na(NewSpeed)){
+          v <- NewSpeed
+     }
      # Create the results directory path
      ResultsDir <- paste(ShiftPrefix, SimDir, sep = "/")
      dir.create(ResultsDir)
@@ -1011,24 +1089,48 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
      direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
      DirectIndex <- 1
      
+     # Load in the equilibrium population matrix
+     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- as.matrix(PopMat)
+     PopSize <- nrow(PopMat)
+     
      # Set up an object to hold summary statistics 
-     SumStatCols <- list(gen = 1, beta = 2, x = 3, abund = 4, MuGen = 5,
-                         GenVar = 6, MuPhen = 7, SigmaPhen = 8)
+     SumStatCols <- list(gen = 1, beta = 2, x = 3, abund = 4, dBar = 5,
+                         GenVar = 6)
      SumStatRow <- 1
-     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 8)
+     SumStats <- matrix(NA, nrow = SumMatSize, ncol = 6)
      CurStatsDim <- SumMatSize
      
-     # Calculate the speed of climate change according to the dispersal threshold
-     v <- 2*sqrt(0.5 * log(R) * dThresh^2)
+     # Record the summary statistics for the starting generation
+     OccPatches <- unique(PopMat[,PopIndices$x0])
+     NumPatches <- length(OccPatches)
+     if( (SumStatRow + NumPatches) > CurStatsDim){
+          NewMat <- matrix(NA, nrow = SumMatSize, ncol = 6)
+          SumStats <- rbind(SumStats, NewMat)
+          CurStatsDim <- CurStatsDim + SumMatSize
+     }
+     for(i in 1:NumPatches){
+          PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
+          PatchPopSize <- length(PatchPop)
+          if(PatchPopSize > 0){
+               SumStats[SumStatRow, SumStatCols$gen] <- 0
+               SumStats[SumStatRow, SumStatCols$beta] <- BetaInit
+               SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
+               SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
+               GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
+               SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+               DispPhens <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize,
+                                     PopIndices = PopIndices, Haploid = Haploid,
+                                     L = L, dmax = dmax, rho = rho, lambda = lambda)
+               SumStats[SumStatRow, SumStatCols$dBar] <- mean(DispPhens)
+               SumStatRow <- SumStatRow + 1
+          }
+     }
+     
      
      # Generate a vector of beta values for the climate change
      BetaShift <- ChangeClimate(BetaInit = BetaInit, LengthShift = LengthShift, 
                                 v = v)
-     # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
-     #PopMat$x1 <- PopMat$x0
-     PopMat <- as.matrix(PopMat)
-     PopSize <- nrow(PopMat)
      
      # Now run the simulation
      for(g in 1:LengthShift){
@@ -1095,7 +1197,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
                # Record the summary statistics for the current generation
                NumPatches <- length(OccPatches)
                if( (SumStatRow + NumPatches) > CurStatsDim){
-                    NewMat <- matrix(NA, nrow = SumMatSize, ncol = 8)
+                    NewMat <- matrix(NA, nrow = SumMatSize, ncol = 6)
                     SumStats <- rbind(SumStats, NewMat)
                     CurStatsDim <- CurStatsDim + SumMatSize
                }
@@ -1107,14 +1209,12 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
                          SumStats[SumStatRow, SumStatCols$beta] <- BetaShift[g]
                          SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
                          SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
-                         SumStats[SumStatRow, SumStatCols$MuGen] <- mean(PopMat[PatchPop, PopIndices$DispCols])
                          GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
                          SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
                          DispPhens <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize,
                                                PopIndices = PopIndices, Haploid = Haploid,
                                                L = L, dmax = dmax, rho = rho, lambda = lambda)
-                         SumStats[SumStatRow, SumStatCols$MuPhen] <- mean(DispPhens)
-                         SumStats[SumStatRow, SumStatCols$SigmaPhen] <- sd(DispPhens)
+                         SumStats[SumStatRow, SumStatCols$dBar] <- mean(DispPhens)
                          SumStatRow <- SumStatRow + 1
                     }
                }
@@ -1123,8 +1223,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
           }
      }
      # Save the summary statistics
-     colnames(SumStats) <- c("gen", "beta", "x", "abund", "MuGen", "GenVar",
-                             "MuPhen", "SigmaPhen")
+     colnames(SumStats) <- c("gen", "beta", "x", "abund", "dBar", "GenVar")
      SumStats <- SumStats[1:(SumStatRow - 1),]
      write.csv(SumStats, file = paste(ResultsDir, "SummaryStats.csv", sep = "/"),
                row.names = FALSE, quote = FALSE)
@@ -1141,4 +1240,238 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
      write.csv(PopMat, file = paste(ResultsDir, "ShiftedPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      return(NULL)
+}
+
+###### ExtraShift
+# This function will perform extra range shift simulations to keep track of 
+#    extinction events over a larger sample size. Actual population matrices
+#    won't be saved, it will merely return a 1 or 0 to indicate extinction (1)
+#    or survival (0) of the simulated population
+### INPUTS
+# SimDir: the directory with the simulation files for the current simulation
+# parallel: A boolean variable indicating whether the simulations are being run
+#              on a server or not (which affects how file paths are determined).
+### OUTPUT
+# A boolean variable indicating extinction
+ExtraShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewSpeed = NA){
+     # Load the necessary parameters
+     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     if(!is.na(NewSpeed)){
+          v <- NewSpeed
+     }
+     
+     # Next, create the population column indices
+     PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
+     if(Haploid | monoecious){
+          NumCols <- 2 + 2^(1-Haploid) * L
+     } else{
+          NumCols <- 3 + 2 * L
+     }
+     LocusVec <- 1:L
+     AlleleVec <- 1:(2^(1-Haploid) * L)
+     
+     # Create vectors of random numbers (including sex determination random numbers if
+     #    necessary)
+     if(Haploid){
+          SegVals <- NULL
+          SegIndex <- NA
+     }else{
+          SegVals <- matrix(NA, nrow = 2, ncol = NumRands)
+          SegVals[1,] <- sample(c(0,1), replace = TRUE, size = NumRands)
+          SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
+          SegIndex <- 1
+     }
+     nu <- U / (2^(1-Haploid)*L)
+     NumMut <- rbinom(n = NumRands, size = 2^(1-Haploid)*L, prob = nu)
+     if( !(is.null(PopIndices$sex)) ){
+          SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+     } else{
+          SexRands <- NULL
+          if(!Haploid){
+               SelfRands <- rbinom(n = NumRands, size = 1, prob = omega)
+          }
+     }
+     OffspringIndex <- 1
+     direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+     DirectIndex <- 1
+     
+     # Load in the equilibrium population matrix
+     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- as.matrix(PopMat)
+     PopSize <- nrow(PopMat)
+     
+     # Generate a vector of beta values for the climate change
+     BetaShift <- ChangeClimate(BetaInit = BetaInit, LengthShift = LengthShift, 
+                                v = v)
+     
+     # Now run the simulation
+     for(g in 1:LengthShift){
+          if(PopSize > 0){
+               disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
+                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+               
+               # Check that there are enough entries left in the direction vector and repopulate
+               #    it if necessary
+               if( (DirectIndex + PopSize) > NumRands ){
+                    direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+                    DirectIndex <- 1
+               }
+               # Get the new post dispersal locations
+               Deltas <- Disperse(d = disps, kern = kern, direction = direction,
+                                  DirectIndex = DirectIndex, PopSize = PopSize,
+                                  PopIndices = PopIndices, PopMat = PopMat)
+               PopMat[,PopIndices$x1] <- PopMat[,PopIndices$x0] + Deltas
+               
+               # Update the angle index
+               DirectIndex <- DirectIndex + PopSize
+               
+               # Generate the matrix of occupied patches and get population numbers
+               #    for the next generation
+               OccPatches <- unique(PopMat[,PopIndices$x1])
+               RealizedNtp1 <- Reproduce(CurBeta = BetaShift[g], gamma = gamma, tau = tau,
+                                         R = R, Kmax = Kmax, PopMat = PopMat,
+                                         PopIndices = PopIndices, psi = psi,
+                                         OccPatches = OccPatches, Haploid = Haploid,
+                                         Expand = FALSE)
+               
+               # Now create a new population matrix for the next generation
+               PopSize <- sum(RealizedNtp1)
+               if(PopSize > 0){
+                    # Check that the SegVals vectors contain enough values and resample if not
+                    if( (!Haploid) & ((SegIndex + PopSize*L) > NumRands) ){
+                         SegVals[1,] <- sample(c(0,1), replace = TRUE, size = NumRands)
+                         SegVals[2,] <- sample(c(0,1), replace = TRUE, size = NumRands)
+                         SegIndex <- 1
+                    }
+                    # Check the same for the OffspringIndex
+                    if( (OffspringIndex + PopSize) > NumRands){
+                         NumMut <- rbinom(n = NumRands, size = L, prob = nu)
+                         if( !(is.null(PopIndices$sex)) ){
+                              SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+                         }
+                         OffspringIndex <- 1
+                    }
+                    PopMat <- NextPopMat(Ntp1 = RealizedNtp1, PopIndices = PopIndices, 
+                                         OccPatches = OccPatches, psi = psi, SumNtp1 = PopSize, 
+                                         L = L, PopMat = PopMat, LocusVec = LocusVec,
+                                         SegVals = SegVals, SegIndex = SegIndex, NumMutVec = NumMut, 
+                                         OffspringIndex = OffspringIndex, AlleleVec = AlleleVec, 
+                                         MutStd = sigma, SelfRands = SelfRands, NumCols = NumCols,
+                                         SexRands = SexRands)
+                    # Now update the SegIndices
+                    SegIndex <- SegIndex + PopSize*L
+                    # And update the OffspringIndex
+                    OffspringIndex <- OffspringIndex + PopSize
+               } else{
+                    PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
+               }
+          }
+     }
+     Extinct <- ifelse(PopSize > 0, 0, 1)
+     return(Extinct)
+}
+
+###### NoEvolShift
+# This function will perform range shift simulations without evolution to quantify
+#    the impact of evolution on extinction risk. Actual population matrices
+#    won't be saved, it will merely return a 1 or 0 to indicate extinction (1)
+#    or survival (0) of the simulated population
+### INPUTS
+# SimDir: the directory with the simulation files for the current simulation
+# parallel: A boolean variable indicating whether the simulations are being run
+#              on a server or not (which affects how file paths are determined).
+### OUTPUT
+# A boolean variable indicating extinction
+NoEvolShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewSpeed = NA){
+     # Load the necessary parameters
+     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     if(!is.na(NewSpeed)){
+          v <- NewSpeed
+     }
+     
+     # Next, create the population column indices
+     PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
+     if(Haploid | monoecious){
+          NumCols <- 2 + 2^(1-Haploid) * L
+     } else{
+          NumCols <- 3 + 2 * L
+     }
+     
+     # Create vectors of random numbers for sex determination and dispersal direction
+     #    Since evolution is prevented in this simulation, the other vectors
+     #         of random numbers governing allele inheritence and mutation are
+     #         unnecessary.
+     if( !(is.null(PopIndices$sex)) ){
+          SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+     }
+     direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+     DirectIndex <- 1
+     OffspringIndex <- 1
+     
+     # Load in the equilibrium population matrix
+     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- as.matrix(PopMat)
+     PopSize <- nrow(PopMat)
+     
+     # Store the initial values for each allele to be sampled from later so that
+     #    allele frequencies always are drawn from the founding individuals
+     InitAlleles <- as.matrix(PopMat[,PopIndices$DispCols])
+     
+     # Generate a vector of beta values for the climate change
+     BetaShift <- ChangeClimate(BetaInit = BetaInit, LengthShift = LengthShift, 
+                                v = v)
+     
+     # Now run the simulation
+     for(g in 1:LengthShift){
+          if(PopSize > 0){
+               disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
+                                 Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+               
+               # Check that there are enough entries left in the direction vector and repopulate
+               #    it if necessary
+               if( (DirectIndex + PopSize) > NumRands ){
+                    direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+                    DirectIndex <- 1
+               }
+               # Get the new post dispersal locations
+               Deltas <- Disperse(d = disps, kern = kern, direction = direction,
+                                  DirectIndex = DirectIndex, PopSize = PopSize,
+                                  PopIndices = PopIndices, PopMat = PopMat)
+               PopMat[,PopIndices$x1] <- PopMat[,PopIndices$x0] + Deltas
+               
+               # Update the angle index
+               DirectIndex <- DirectIndex + PopSize
+               
+               # Generate the matrix of occupied patches and get population numbers
+               #    for the next generation
+               OccPatches <- unique(PopMat[,PopIndices$x1])
+               RealizedNtp1 <- Reproduce(CurBeta = BetaShift[g], gamma = gamma, tau = tau,
+                                         R = R, Kmax = Kmax, PopMat = PopMat,
+                                         PopIndices = PopIndices, psi = psi,
+                                         OccPatches = OccPatches, Haploid = Haploid,
+                                         Expand = FALSE)
+               
+               # Now create a new population matrix for the next generation
+               PopSize <- sum(RealizedNtp1)
+               if(PopSize > 0){
+                    # Check the same for the OffspringIndex
+                    if( (OffspringIndex + PopSize) > NumRands){
+                         if( !(is.null(PopIndices$sex)) ){
+                              SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+                              OffspringIndex <- 1
+                         }
+                    }
+                    PopMat <- NextPopMatNoEvol(Ntp1 = RealizedNtp1, PopIndices = PopIndices,
+                                              OccPatches = OccPatches, SumNtp1 = PopSize, 
+                                              NumCols = NumCols, SexRands = SexRands,
+                                              InitAlleles = InitAlleles, OffspringIndex = OffspringIndex)
+                    # And update the OffspringIndex
+                    OffspringIndex <- OffspringIndex + PopSize
+               } else{
+                    PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
+               }
+          }
+     }
+     Extinct <- ifelse(PopSize > 0, 0, 1)
+     return(Extinct)
 }
