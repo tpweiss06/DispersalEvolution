@@ -8,23 +8,23 @@ library(RColorBrewer)
 #----------------------------------- First, load in both the haploid and diploid
 # dioecious data objects, renaming them to avoid confusion.
 # Haploid
-load("SimData/2019-06-05_HaploidExpand.rdata")
+load("SimData/FinalSims/Haploid-Expand.rdata")
 Haploid <- DispData
 HapData <- SimData
 # Diploid dioecious
-load("SimData/2019-06-05_DipDioExpand.rdata")
+load("SimData/FinalSims/DipDio-Expand.rdata")
 DipDioe <- DispData
 DipData <- SimData
 # Diploid monoecious, omega = 0
-load("SimData/2019-07-18_DiploidMono-0-Expand.rdata")
+load("SimData/FinalSims/DipMono-0-Expand.rdata")
 DipMono_0 <- DispData
 DipMono_0_Data <- SimData
 # Diploid monoecious, omega = 0.5
-load("SimData/2019-07-19_DiploidMono-05-Expand.rdata")
+load("SimData/FinalSims/DipMono-05-Expand.rdata")
 DipMono_05 <- DispData
 DipMono_05_Data <- SimData
 # Diploid monoecious, omega = 1
-load("SimData/2019-07-23_DiploidMono-1-Expand.rdata")
+load("SimData/FinalSims/DipMono-1-Expand.rdata")
 DipMono_1 <- DispData
 DipMono_1_Data <- SimData
 
@@ -57,163 +57,163 @@ InnerMar <- c(5,5,2,2)
 
 #------------------------------ Now create the animated Gif of dBar through time
 # # Set the size of the png image
-# FigWidth <- 1200
-# FigHeight <- 900
-# FigPointSize <- 18
-# # Create objects to control the sizing of things in these plots
-# TitleLine <- 2
-# TitleSize <- 1.5
-# PlotTitleLine <- 0.5
-# PlotTitleSize <- 1.5
-# yLab_x <- -1400
-# yLab_y <- 2.5
-# yLabSize <- 1.5
-# xLabLine <- 3
-# xLabSize <- 1.5
-# AxisSize <- 1.25
-# LegSize <- 1.5
-# LegLineWidth <- 2
-# OuterMar <- c(5, 4, 4, 2)
-# InnerMar <- c(0, 1, 0, 1)
-# # Create a temporary directory to store the sill images
-# TempDirPath <- "ResultFigures/temp"
-# dir.create(TempDirPath)
-# # Now, loop through each generation making the still image for that generation
-# for(t in 1:Ngens){
-#      gen <- Gens[t]
-#      if(gen == 0){
-#           GenNum <- "000"
-#      } else if(gen < 100){
-#           GenNum <- paste("0", gen, sep = "")
-#      } else{
-#           GenNum <- gen
-#      }
-#      FigName <- paste(TempDirPath, "/gen", GenNum, ".png", sep = "")
-#      FigTitle <- paste("Generation", gen, sep = " ")
-#      png(filename = FigName, width = FigWidth, height = FigHeight, pointsize = FigPointSize)
-#           par(mfrow = c(1,2), mar = InnerMar, oma = OuterMar)
-#           # Make the Haploid plot first
-#           plot(x = NA, y = NA, xlim = xRange, ylim = yRange_dBar, main = "", ylab = "", 
-#                xlab = "", las = 1, cex.axis = AxisSize)
-#           # Plot the lines for each loci
-#           for(l in 1:length(Lseq)){
-#                CurData <- Haploid[[l]]$dBar[[t]]
-#                lines(x = CurData$x, y = CurData$dBar, lty = LociLines[l],
-#                      col = LociCols[l])
-#           }
-#           # Add a legend
-#           legend("top", bty = "n", legend = LociLabels, 
-#                  lty = LociLines, col = LociCols, lwd = LegLineWidth, cex = LegSize)
-#           # Add the plot title and y axis label
-#           mtext(side = 3, text = "Haploid", line = PlotTitleLine, cex = PlotTitleSize)
-#           text(labels = dBarLab, x = yLab_x, y = yLab_y, cex = xLabSize, srt = 0, xpd = NA)
-#           
-#           # Now add the Diploid dioecious plot
-#           plot(x = NA, y = NA, xlim = xRange, ylim = yRange_dBar, main = "", ylab = "", 
-#                xlab = "", las = 1, yaxt = "n", cex.axis = AxisSize)
-#           axis(2, labels = FALSE)
-#           # Plot the lines for each loci
-#           for(l in 1:length(Lseq)){
-#                CurData <- DipDioe[[l]]$dBar[[t]]
-#                lines(x = CurData$x, y = CurData$dBar, lty = LociLines[l],
-#                      col = LociCols[l])
-#           }
-#           # Add the plot title
-#           mtext(side = 3, text = "Diploid dioecious", line = PlotTitleLine, cex = PlotTitleSize)
-#           
-#           # Add the other figure text (Generation and axes labels)
-#           mtext(text = FigTitle, side = 3, outer = TRUE, line = TitleLine, cex = TitleSize)
-#           mtext(text = "Space", side = 1, outer = TRUE, line = xLabLine, cex = xLabSize)
-#           #mtext(text = dBarLab, side = 2, outer = TRUE, line = yLabLine, cex = yLabSize)
-#           
-#      dev.off()
-# }
-# # Now make the animation
-# GifName <- "ResultFigures/dBarEvolution.gif"
-# SysCommand1 <- paste("convert -delay 50 ", TempDirPath, "/gen*.png ", GifName, sep = "")
-# SysCommand2 <- paste("rm -r ", TempDirPath, sep = "")
-# system(SysCommand1)
-# system(SysCommand2)
+FigWidth <- 1200
+FigHeight <- 900
+FigPointSize <- 18
+# Create objects to control the sizing of things in these plots
+TitleLine <- 2
+TitleSize <- 1.5
+PlotTitleLine <- 0.5
+PlotTitleSize <- 1.5
+yLab_x <- -1400
+yLab_y <- 2.5
+yLabSize <- 1.5
+xLabLine <- 3
+xLabSize <- 1.5
+AxisSize <- 1.25
+LegSize <- 1.5
+LegLineWidth <- 2
+OuterMar <- c(5, 4, 4, 2)
+InnerMar <- c(0, 1, 0, 1)
+# Create a temporary directory to store the sill images
+TempDirPath <- "ResultFigures/temp"
+dir.create(TempDirPath)
+# Now, loop through each generation making the still image for that generation
+for(t in 1:Ngens){
+     gen <- Gens[t]
+     if(gen == 0){
+          GenNum <- "000"
+     } else if(gen < 100){
+          GenNum <- paste("0", gen, sep = "")
+     } else{
+          GenNum <- gen
+     }
+     FigName <- paste(TempDirPath, "/gen", GenNum, ".png", sep = "")
+     FigTitle <- paste("Generation", gen, sep = " ")
+     png(filename = FigName, width = FigWidth, height = FigHeight, pointsize = FigPointSize)
+          par(mfrow = c(1,2), mar = InnerMar, oma = OuterMar)
+          # Make the Haploid plot first
+          plot(x = NA, y = NA, xlim = xRange, ylim = yRange_dBar, main = "", ylab = "",
+               xlab = "", las = 1, cex.axis = AxisSize)
+          # Plot the lines for each loci
+          for(l in 1:length(Lseq)){
+               CurData <- Haploid[[l]]$dBar[[t]]
+               lines(x = CurData$x, y = CurData$dBar, lty = LociLines[l],
+                     col = LociCols[l])
+          }
+          # Add a legend
+          legend("top", bty = "n", legend = LociLabels,
+                 lty = LociLines, col = LociCols, lwd = LegLineWidth, cex = LegSize)
+          # Add the plot title and y axis label
+          mtext(side = 3, text = "Haploid", line = PlotTitleLine, cex = PlotTitleSize)
+          text(labels = dBarLab, x = yLab_x, y = yLab_y, cex = xLabSize, srt = 0, xpd = NA)
+
+          # Now add the Diploid dioecious plot
+          plot(x = NA, y = NA, xlim = xRange, ylim = yRange_dBar, main = "", ylab = "",
+               xlab = "", las = 1, yaxt = "n", cex.axis = AxisSize)
+          axis(2, labels = FALSE)
+          # Plot the lines for each loci
+          for(l in 1:length(Lseq)){
+               CurData <- DipDioe[[l]]$dBar[[t]]
+               lines(x = CurData$x, y = CurData$dBar, lty = LociLines[l],
+                     col = LociCols[l])
+          }
+          # Add the plot title
+          mtext(side = 3, text = "Diploid dioecious", line = PlotTitleLine, cex = PlotTitleSize)
+
+          # Add the other figure text (Generation and axes labels)
+          mtext(text = FigTitle, side = 3, outer = TRUE, line = TitleLine, cex = TitleSize)
+          mtext(text = "Space", side = 1, outer = TRUE, line = xLabLine, cex = xLabSize)
+          #mtext(text = dBarLab, side = 2, outer = TRUE, line = yLabLine, cex = yLabSize)
+
+     dev.off()
+}
+# Now make the animation
+GifName <- "ResultFigures/dBarEvolution.gif"
+SysCommand1 <- paste("convert -delay 50 ", TempDirPath, "/gen*.png ", GifName, sep = "")
+SysCommand2 <- paste("rm -r ", TempDirPath, sep = "")
+system(SysCommand1)
+system(SysCommand2)
 
 #------------------ Now create the animated Gif of genetic variance through time
-# # Set the size of the png image
-# FigWidth <- 1200
-# FigHeight <- 900
-# FigPointSize <- 18
-# # Create objects to control the sizing of things in these plots
-# TitleLine <- 2
-# TitleSize <- 1.5
-# PlotTitleLine <- 0.5
-# PlotTitleSize <- 1.5
-# yLab_x <- -1400
-# yLab_y <- 2.5
-# yLabSize <- 1.5
-# xLabLine <- 3
-# xLabSize <- 1.5
-# AxisSize <- 1.25
-# LegSize <- 1.5
-# LegLineWidth <- 2
-# OuterMar <- c(5, 4, 4, 2)
-# InnerMar <- c(0, 1, 0, 1)
-# # Create a temporary directory to store the sill images
-# TempDirPath <- "ResultFigures/temp"
-# dir.create(TempDirPath)
-# # Now, loop through each generation making the still image for that generation
-# for(t in 1:Ngens){
-#      gen <- Gens[t]
-#      if(gen == 0){
-#           GenNum <- "000"
-#      } else if(gen < 100){
-#           GenNum <- paste("0", gen, sep = "")
-#      } else{
-#           GenNum <- gen
-#      }
-#      FigName <- paste(TempDirPath, "/gen", GenNum, ".png", sep = "")
-#      FigTitle <- paste("Generation", gen, sep = " ")
-#      png(filename = FigName, width = FigWidth, height = FigHeight, pointsize = FigPointSize)
-#           par(mfrow = c(1,2), mar = InnerMar, oma = OuterMar)
-#           # Make the Haploid plot first
-#           plot(x = NA, y = NA, xlim = xRange, ylim = yRange_GenVar, main = "", ylab = "", 
-#                xlab = "", las = 1, cex.axis = AxisSize)
-#           # Plot the lines for each loci
-#           for(l in 1:length(Lseq)){
-#                CurData <- Haploid[[l]]$GenVar[[t]]
-#                lines(x = CurData$x, y = CurData$GenVar, lty = LociLines[l],
-#                      col = LociCols[l])
-#           }
-#           # Add a legend
-#           legend("topright", bty = "n", legend = LociLabels, 
-#                  lty = LociLines, col = LociCols, lwd = LegLineWidth, cex = LegSize)
-#           # Add the plot title and y axis label
-#           mtext(side = 3, text = "Haploid", line = PlotTitleLine, cex = PlotTitleSize)
-#           text(labels = dBarLab, x = yLab_x, y = yLab_y, cex = xLabSize, srt = 0, xpd = NA)
-#      
-#           # Now add the Diploid dioecious plot
-#           plot(x = NA, y = NA, xlim = xRange, ylim = yRange_GenVar, main = "", ylab = "", 
-#                xlab = "", las = 1, yaxt = "n", cex.axis = AxisSize)
-#           axis(2, labels = FALSE)
-#           # Plot the lines for each loci
-#           for(l in 1:length(Lseq)){
-#                CurData <- DipDioe[[l]]$GenVar[[t]]
-#                lines(x = CurData$x, y = CurData$GenVar, lty = LociLines[l],
-#                      col = LociCols[l])
-#           }
-#           # Add the plot title
-#           mtext(side = 3, text = "Diploid dioecious", line = PlotTitleLine, cex = PlotTitleSize)
-#      
-#           # Add the other figure text (Generation and axes labels)
-#           mtext(text = FigTitle, side = 3, outer = TRUE, line = TitleLine, cex = TitleSize)
-#           mtext(text = "Space", side = 1, outer = TRUE, line = xLabLine, cex = xLabSize)
-#           #mtext(text = dBarLab, side = 2, outer = TRUE, line = yLabLine, cex = yLabSize)
-#      
-#      dev.off()
-# }
-# # Now make the animation
-# GifName <- "ResultFigures/GenVarEvolution.gif"
-# SysCommand1 <- paste("convert -delay 50 ", TempDirPath, "/gen*.png ", GifName, sep = "")
-# SysCommand2 <- paste("rm -r ", TempDirPath, sep = "")
-# system(SysCommand1)
-# system(SysCommand2)
+# Set the size of the png image
+FigWidth <- 1200
+FigHeight <- 900
+FigPointSize <- 18
+# Create objects to control the sizing of things in these plots
+TitleLine <- 2
+TitleSize <- 1.5
+PlotTitleLine <- 0.5
+PlotTitleSize <- 1.5
+yLab_x <- -1400
+yLab_y <- 2.5
+yLabSize <- 1.5
+xLabLine <- 3
+xLabSize <- 1.5
+AxisSize <- 1.25
+LegSize <- 1.5
+LegLineWidth <- 2
+OuterMar <- c(5, 4, 4, 2)
+InnerMar <- c(0, 1, 0, 1)
+# Create a temporary directory to store the sill images
+TempDirPath <- "ResultFigures/temp"
+dir.create(TempDirPath)
+# Now, loop through each generation making the still image for that generation
+for(t in 1:Ngens){
+     gen <- Gens[t]
+     if(gen == 0){
+          GenNum <- "000"
+     } else if(gen < 100){
+          GenNum <- paste("0", gen, sep = "")
+     } else{
+          GenNum <- gen
+     }
+     FigName <- paste(TempDirPath, "/gen", GenNum, ".png", sep = "")
+     FigTitle <- paste("Generation", gen, sep = " ")
+     png(filename = FigName, width = FigWidth, height = FigHeight, pointsize = FigPointSize)
+          par(mfrow = c(1,2), mar = InnerMar, oma = OuterMar)
+          # Make the Haploid plot first
+          plot(x = NA, y = NA, xlim = xRange, ylim = yRange_GenVar, main = "", ylab = "",
+               xlab = "", las = 1, cex.axis = AxisSize)
+          # Plot the lines for each loci
+          for(l in 1:length(Lseq)){
+               CurData <- Haploid[[l]]$GenVar[[t]]
+               lines(x = CurData$x, y = CurData$GenVar, lty = LociLines[l],
+                     col = LociCols[l])
+          }
+          # Add a legend
+          legend("topright", bty = "n", legend = LociLabels,
+                 lty = LociLines, col = LociCols, lwd = LegLineWidth, cex = LegSize)
+          # Add the plot title and y axis label
+          mtext(side = 3, text = "Haploid", line = PlotTitleLine, cex = PlotTitleSize)
+          text(labels = dBarLab, x = yLab_x, y = yLab_y, cex = xLabSize, srt = 0, xpd = NA)
+
+          # Now add the Diploid dioecious plot
+          plot(x = NA, y = NA, xlim = xRange, ylim = yRange_GenVar, main = "", ylab = "",
+               xlab = "", las = 1, yaxt = "n", cex.axis = AxisSize)
+          axis(2, labels = FALSE)
+          # Plot the lines for each loci
+          for(l in 1:length(Lseq)){
+               CurData <- DipDioe[[l]]$GenVar[[t]]
+               lines(x = CurData$x, y = CurData$GenVar, lty = LociLines[l],
+                     col = LociCols[l])
+          }
+          # Add the plot title
+          mtext(side = 3, text = "Diploid dioecious", line = PlotTitleLine, cex = PlotTitleSize)
+
+          # Add the other figure text (Generation and axes labels)
+          mtext(text = FigTitle, side = 3, outer = TRUE, line = TitleLine, cex = TitleSize)
+          mtext(text = "Space", side = 1, outer = TRUE, line = xLabLine, cex = xLabSize)
+          #mtext(text = dBarLab, side = 2, outer = TRUE, line = yLabLine, cex = yLabSize)
+
+     dev.off()
+}
+# Now make the animation
+GifName <- "ResultFigures/GenVarEvolution.gif"
+SysCommand1 <- paste("convert -delay 50 ", TempDirPath, "/gen*.png ", GifName, sep = "")
+SysCommand2 <- paste("rm -r ", TempDirPath, sep = "")
+system(SysCommand1)
+system(SysCommand2)
 
 #----------------------------- Now create a figure of the last generation values 
 #                             for dBar for all population types
