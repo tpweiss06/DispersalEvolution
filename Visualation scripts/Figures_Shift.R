@@ -8,23 +8,23 @@ library(RColorBrewer)
 #----------------------------------- First, load in both the haploid and diploid
 # dioecious data objects, renaming them to avoid confusion.
 # Haploid
-load("SimData/2019-06-05_HaploidShift.rdata")
+load("SimData/FinalSims/Haploid-Shift.rdata")
 Haploid <- ShiftData
 HapData <- SimData
 # Diploid dioecious
-load("SimData/2019-06-26_DiploidDioShift.rdata")
+load("SimData/FinalSims/DipDio-Shift.rdata")
 DipDioe <- ShiftData
 DipData <- SimData
 # Diploid monoecious, omega = 0
-load("SimData/2019-07-18_DiploidMono-0-Shift.rdata")
+load("SimData/FinalSims/DipMono-0-Shift.rdata")
 DipMono_0 <- ShiftData
 DipMono_0_Data <- SimData
 # Diploid monoecious, omega = 0.5
-load("SimData/2019-07-19_DiploidMono-05-Shift.rdata")
+load("SimData/FinalSims/DipMono-05-Shift.rdata")
 DipMono_05 <- ShiftData
 DipMono_05_Data <- SimData
 # Diploid monoecious, omega = 1
-load("SimData/2019-07-23_DiploidMono-1-Shift.rdata")
+load("SimData/FinalSims/DipMono-1-Shift.rdata")
 DipMono_1 <- ShiftData
 DipMono_1_Data <- SimData
 
@@ -61,21 +61,16 @@ DipMono_0_Col <- AllCols[3]
 DipMono_05_Col <- AllCols[4]
 DipMono_1_Col <- AllCols[5]
 
-# Load the ExtraShift objects to get slightly cleaned up versions of the extinction
-#    probabilities
-load("SimData/2019-06-26_DipDioExtraShift.rdata")
-DipDioExtProbs <- ExtProb
-load("SimData/2019-06-05_HaploidExtraShift.rdata")
-HapExtProbs <- ExtProb
-load("SimData/2019-07-18_DiploidMono-0-ExtraShift.rdata")
-DipMono_0_ExtProbs <- ExtProb
-load("SimData/2019-07-19_DiploidMono-05-ExtraShift.rdata")
-DipMono_05_ExtProbs <- ExtProb
-load("SimData/2019-07-23_DiploidMono-1-ExtraShift.rdata")
-DipMono_1_ExtProbs <- ExtProb
-
-#### Haploid
-FigName <- "ResultFigures/HaploidExtinction.pdf"
+# Extract the overall extinction risk from the data
+ExtRisk <- matrix(NA, nrow = 5, ncol = 6)
+for(i in 1:length(Lseq)){
+        ExtRisk[1,i] <- Haploid[[i]]$ext[11]
+        ExtRisk[2,i] <- DipMono_1[[i]]$ext[11]
+        ExtRisk[3,i] <- DipMono_05[[i]]$ext[11]
+        ExtRisk[4,i] <- DipMono_0[[i]]$ext[11]
+        ExtRisk[5,i] <- DipDioe[[i]]$ext[11]
+}
+FigName <- "ResultFigures/ExtinctionRisk.pdf"
 pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
      par(mar = c(5,5,2,2) + 0.1, bg = "white")
      plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
@@ -83,80 +78,11 @@ pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
      mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
      mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
      # Plot the results
-     points(x = Lseq, y = HapExtProbs, pch = HapPoints, col = HapCol, cex = PointSize)
-     # Create a legend
-     legend("topright", bty = "n", legend = c("Haploid"), pch = c(HapPoints), 
-            col = c(HapCol), cex = LegSize)
-dev.off()
-
-#### Plus Diploid dioecious
-FigName <- "ResultFigures/PlusDipDioExtinction.pdf"
-pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
-     par(mar = c(5,5,2,2) + 0.1, bg = "white")
-     plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
-          ylab = "", las = 1, cex.axis = AxisSize)
-     mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
-     mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
-     # Plot the results
-     points(x = Lseq, y = HapExtProbs, pch = HapPoints, col = HapCol, cex = PointSize)
-     points(x = Lseq, y = DipDioExtProbs, pch = DipDioPoints, col = DipDioCol, cex = PointSize)
-     # Create a legend
-     legend("topright", bty = "n", legend = c("Haploid", "Diploid dioecious"), 
-            pch = c(HapPoints, DipDioPoints), col = c(HapCol, DipDioCol), cex = LegSize)
-dev.off()
-
-#### Plus Diploid monoecious, omega = 1
-FigName <- "ResultFigures/PlusDipMono_1_Extinction.pdf"
-pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
-     par(mar = c(5,5,2,2) + 0.1, bg = "white")
-     plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
-          ylab = "", las = 1, cex.axis = AxisSize)
-     mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
-     mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
-     # Plot the results
-     points(x = Lseq, y = HapExtProbs, pch = HapPoints, col = HapCol, cex = PointSize)
-     points(x = Lseq, y = DipDioExtProbs, pch = DipDioPoints, col = DipDioCol, cex = PointSize)
-     points(x = Lseq, y = DipMono_1_ExtProbs, pch = DipMonoPoints, col = DipMono_1_Col, cex = PointSize)
-     # Create a legend
-     legend("topright", bty = "n", legend = c("Haploid", "Diploid dioecious", "Obligate selfing"), 
-            pch = c(HapPoints, DipDioPoints, DipMonoPoints), col = c(HapCol, DipDioCol, DipMono_1_Col), 
-            cex = LegSize)
-dev.off()
-
-#### Plus Diploid monoecious, omega = 0.5
-FigName <- "ResultFigures/PlusDipMono_05_Extinction.pdf"
-pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
-     par(mar = c(5,5,2,2) + 0.1, bg = "white")
-     plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
-          ylab = "", las = 1, cex.axis = AxisSize)
-     mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
-     mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
-     # Plot the results
-     points(x = Lseq, y = HapExtProbs, pch = HapPoints, col = HapCol, cex = PointSize)
-     points(x = Lseq, y = DipDioExtProbs, pch = DipDioPoints, col = DipDioCol, cex = PointSize)
-     points(x = Lseq, y = DipMono_05_ExtProbs, pch = DipMonoPoints, col = DipMono_05_Col, cex = PointSize)
-     points(x = Lseq, y = DipMono_1_ExtProbs, pch = DipMonoPoints, col = DipMono_1_Col, cex = PointSize)
-     # Create a legend
-     legend("topright", bty = "n", legend = c("Haploid", "Diploid dioecious", 
-                                              "Obligate selfing", "Partial selfing"), 
-            pch = c(HapPoints, DipDioPoints, rep(DipMonoPoints, 2)), 
-            col = c(HapCol, DipDioCol, DipMono_1_Col, DipMono_05_Col), cex = LegSize)
-dev.off()
-
-#### Plus Diploid monoecious, omega = 0
-FigName <- "ResultFigures/AllExtinction.pdf"
-pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
-     par(mar = c(5,5,2,2) + 0.1, bg = "white")
-     plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
-          ylab = "", las = 1, cex.axis = AxisSize)
-     mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
-     mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
-     # Plot the results
-     points(x = Lseq, y = HapExtProbs, pch = HapPoints, col = HapCol, cex = PointSize)
-     points(x = Lseq, y = DipDioExtProbs, pch = DipDioPoints, col = DipDioCol, cex = PointSize)
-     points(x = Lseq, y = DipMono_0_ExtProbs, pch = DipMonoPoints, col = DipMono_0_Col, cex = PointSize)
-     points(x = Lseq, y = DipMono_05_ExtProbs, pch = DipMonoPoints, col = DipMono_05_Col, cex = PointSize)
-     points(x = Lseq, y = DipMono_1_ExtProbs, pch = DipMonoPoints, col = DipMono_1_Col, cex = PointSize)
+     points(x = Lseq, y = ExtRisk[1,], pch = HapPoints, col = HapCol, cex = PointSize)
+     points(x = Lseq, y = ExtRisk[2,], pch = DipMonoPoints, col = DipMono_1_Col, cex = PointSize)
+     points(x = Lseq, y = ExtRisk[3,], pch = DipMonoPoints, col = DipMono_05_Col, cex = PointSize)
+     points(x = Lseq, y = ExtRisk[4,], pch = DipMonoPoints, col = DipMono_0_Col, cex = PointSize)
+     points(x = Lseq, y = ExtRisk[5,], pch = DipDioPoints, col = DipDioCol, cex = PointSize)
      # Create a legend
      legend("topright", bty = "n", legend = c("Haploid", "Diploid dioecious", 
                                               "Obligate selfing", "Partial selfing", "Minimal selfing"), 
@@ -165,15 +91,6 @@ pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
             cex = LegSize)
 dev.off()
 
-#### Empty
-FigName <- "ResultFigures/EmptyExtinction.pdf"
-pdf(file = FigName, width = 12, height = 8, onefile = FALSE, paper = "special")
-     par(mar = c(5,5,2,2) + 0.1, bg = "white")
-     plot(NA, NA, xlim = xRange, ylim = yRange, main = "", xlab = "",
-          ylab = "", las = 1, cex.axis = AxisSize)
-     mtext("Number of Loci", side = 1, cex = LabSize, line = xLabLine)
-     mtext("Extinction probability", side = 2, cex = LabSize, line = yLabLine)
-dev.off()
 
 #------------------------------------- Now plot the evolved changes through time
 DeltaDbar <- expression(paste(Delta, bar(d)))
