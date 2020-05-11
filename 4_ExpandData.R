@@ -2,8 +2,8 @@
 #    phenotypes during the range expansion simulations
 
 # Set the in and outfiles for the simulations and data
-InFile <- ""
-OutFile <- ""
+InFile <- "2019-09-15_Haploid-Sims.csv"
+OutFile <- "Haploid-Expand.rdata"
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")

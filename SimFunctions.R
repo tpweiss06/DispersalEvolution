@@ -991,37 +991,28 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
                PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
           }
           
-          # Now extract only the edge individuals from the population matrix
-          #    so as to only track those. However, only do this once the population
-          #    has established to a reasonable size to avoid artificially reducing
-          #    the population size we are tracking, thus inducing extinction.
-          #if(PopSize > (50*Kmax)){
-          #     UprQuantile <- quantile(PopMat[,PopIndices$x0], probs = EdgeThresh)
-          #     EdgePop <- which(PopMat[,PopIndices$x0] >= UprQuantile)
-          #     PopMat <- PopMat[EdgePop,]
-          #     PopSize <- nrow(PopMat)
-          #}
-          
-          # Record the summary statistics for the current generation
-          NumPatches <- length(OccPatches)
-          if( (SumStatRow + NumPatches) > CurStatsDim){
-               NewMat <- matrix(NA, nrow = SumMatSize, ncol = 5)
-               SumStats <- rbind(SumStats, NewMat)
-               CurStatsDim <- CurStatsDim + SumMatSize
-          }
-          for(i in 1:NumPatches){
-               PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
-               PatchPopSize <- length(PatchPop)
-               if(PatchPopSize > 0){
-                    SumStats[SumStatRow, SumStatCols$gen] <- g
-                    SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
-                    SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
-                    GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
-                    SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
-                    Disps <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize, PopIndices = PopIndices, 
-                                      Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
-                    SumStats[SumStatRow, SumStatCols$dBar] <- mean(Disps)
-                    SumStatRow <- SumStatRow + 1
+          # Record the summary statistics for every 10th generation
+          if((g %/% 10) == (g / 10)){
+               NumPatches <- length(OccPatches)
+               if( (SumStatRow + NumPatches) > CurStatsDim){
+                    NewMat <- matrix(NA, nrow = SumMatSize, ncol = 5)
+                    SumStats <- rbind(SumStats, NewMat)
+                    CurStatsDim <- CurStatsDim + SumMatSize
+               }
+               for(i in 1:NumPatches){
+                    PatchPop <- which((PopMat[,PopIndices$x0] == OccPatches[i]))
+                    PatchPopSize <- length(PatchPop)
+                    if(PatchPopSize > 0){
+                         SumStats[SumStatRow, SumStatCols$gen] <- g
+                         SumStats[SumStatRow, SumStatCols$x] <- OccPatches[i]
+                         SumStats[SumStatRow, SumStatCols$abund] <- PatchPopSize
+                         GenVars <- var(PopMat[PatchPop,PopIndices$DispCols])
+                         SumStats[SumStatRow, SumStatCols$GenVar] <- sum(GenVars[lower.tri(GenVars, diag = TRUE)])
+                         Disps <- DispPhen(PopMat = PopMat[PatchPop,], PopSize = PatchPopSize, PopIndices = PopIndices, 
+                                           Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+                         SumStats[SumStatRow, SumStatCols$dBar] <- mean(Disps)
+                         SumStatRow <- SumStatRow + 1
+                    }
                }
           }
      }
