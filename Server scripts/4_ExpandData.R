@@ -1,9 +1,16 @@
 # This script will extract information on the spatial distribution of dispersal
 #    phenotypes during the range expansion simulations
 
+# Unzip the necessary folders
+SysCommand1 <- "gunzip -r ~/DispersalEvolution/RangeEquilibrium/"
+SysCommand2 <- "gunzip -r ~/DispersalEvolution/RangeExpansion/"
+system(SysCommand1)
+system(SysCommand2)
+
 # Set the in and outfiles for the simulations and data
-InFile <- "2019-09-15_Haploid-Sims.csv"
-OutFile <- "Haploid-Expand.rdata"
+InFile1 <- "2019-12-08_DipMono-1-Sims.csv"
+#InFile2 <- "2019-10-11_DipDio-Sims.csv"
+OutFile <- "DipMono-1-Expand.rdata"
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -11,7 +18,9 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-SimData <- read.csv(InFile)
+SimData <- read.csv(InFile1)
+#SimData2 <- read.csv(InFile2)
+#SimData <- rbind(SimData1, SimData2)
 
 # Make a list with the rows in the SimData matrix corresponding to each
 #    parameter combination
@@ -127,3 +136,8 @@ DispData <- clusterApply(cl, x = ExtractVec, fun = DispExtract)
 # Save the list returned by clusterApply for graphing
 save(DispData, ParamCombos, SimData, file = OutFile)
 
+# Now rezip the relevant folders
+SysCommand3 <- "gzip -r ~/DispersalEvolution/RangeEquilibrium/"
+SysCommand4 <- "gzip -r ~/DispersalEvolution/RangeExpansion/"
+system(SysCommand3)
+system(SysCommand4)

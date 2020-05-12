@@ -5,9 +5,15 @@
 #    phenotype from equilibrium, (4 & 5) interquartile range in mean dispersal
 #    phenotype changes.
 
+SysCommand1 <- "gunzip -r ~/DispersalEvolution/RangeEquilibrium/"
+SysCommand2 <- "gunzip -r ~/DispersalEvolution/RangeShift/"
+system(SysCommand1)
+system(SysCommand2)
+
 # Set the in and outfiles for the simulations and data
-InFile <- "2019-06-26_DiploidDioSims.csv"
-OutFile <- "2019-06-26_DiploidDioShift.rdata"
+InFile1 <- "2019-12-08_DipMono-1-Sims.csv"
+#InFile2 <- "2019-10-15_DipDio-Sims.csv"
+OutFile <- "DipMono-1-Shift.rdata"
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -15,7 +21,9 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-SimData <- read.csv(InFile)
+SimData <- read.csv(InFile1)
+#SimData2 <- read.csv(InFile2)
+#SimData <- rbind(SimData1, SimData2)
 
 # Make a list with the rows in the SimData matrix corresponding to each
 #    parameter combination
@@ -105,3 +113,7 @@ ShiftData <- clusterApply(cl, x = ExtractVec, fun = ShiftExtract)
 # Save the list returned by clusterApply for graphing
 save(ShiftData, ParamCombos, SimData, file = OutFile)
 
+SysCommand3 <- "gzip -r ~/DispersalEvolution/RangeEquilibrium/"
+SysCommand4 <- "gzip -r ~/DispersalEvolution/RangeShift/"
+system(SysCommand3)
+system(SysCommand4)

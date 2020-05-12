@@ -2,13 +2,13 @@
 #    the input csv file from all subfolders in the DispersalEvolution directory
 
 # First, read in the csv file containing the IDs to be removed
-InFile <- "Trial2_Sims.csv"
+InFile <- "2019-09-15_Haploid-Sims.csv"
 SimData <- read.csv(InFile)
 
 # Now loop through all simulation IDs in the file and delete them
 for(i in 1:nrow(SimData)){
      # Extract just the Simulatin ID so that it can be used on multiple subfolders
-     SimID <- strsplit(x = as.character(CurSims$ID[i]), split = "/")[[1]][4]
+     SimID <- strsplit(x = as.character(SimData$ID[i]), split = "/")[[1]][4]
      # Next, create the file paths to the simulation in all subfolders
      EquilibriumPath <- paste("~/DispersalEvolution/RangeEquilibrium", SimID, sep = "/")
      ExpansionPath <- paste("~/DispersalEvolution/RangeExpansion", SimID, sep = "/")

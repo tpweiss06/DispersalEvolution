@@ -1,0 +1,25 @@
+		Notes on MSI data usage and run times
+
+- Running 100 simulations of haploid organisms with 6 different numbers of loci:
+	STORAGE
+	- 1.1 Gb for the Equilibrium matrices
+	- 3.7 Gb for the Expansion simulations 
+	- 1.9 Gb for the Shift simulations 
+	TIME
+	- 4 hours for the Equilibrium simualtions 
+	- 1.25 hours for the Expansion simulations 
+	- 0.25 hours for the Shift simulations 
+	- 0.75 hours for extracting the Expansion data
+	- 0.25 hours for extracting the Shift data
+
+- Running 100 simulations of diploid dioecious organisms with 6 different numbers of loci:
+	STORAGE
+	- 2.1 Gb for the Equilibrium matrices
+	- 2.7 Gb for the Shift matrices
+	- 3.4 Gb for the Expansion matrices
+	TIME
+	- 20.25 hours for the Equilibrium simulations
+	- 3.25 hours for the Expansion simulations
+	- 0.25 hours for the Shift simulations
+	- 0.5 hours for extracting the Expansion data
+	- 0.25 hours for extracting the Shift data

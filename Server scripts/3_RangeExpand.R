@@ -1,7 +1,11 @@
 # This script will run range expansion simulations on the MSI compute cluster.
 
+SysCommand1 <- "gunzip -r ~/DispersalEvolution/RangeEquilibrium"
+system(SysCommand1)
+
 # Set the infile
-InFile <- ""
+InFile1 <- "2019-12-08_DipMono-1-Sims.csv"
+#InFile2 <- "2019-10-15_DipDio-Sims.csv"
 
 # Set the number of processors
 nProc <- 24*6
@@ -12,7 +16,9 @@ library(parallel)
 library(Rmpi)
 
 # Read in the data with the SimIDs and corresponding parameter values
-SimData <- read.csv(InFile)
+SimData <- read.csv(InFile1)
+#SimData2 <- read.csv(InFile2)
+#SimData <- rbind(SimData1, SimData2)
 
 # Create the function to be run on the cluster
 SimFunc <- function(i){
@@ -36,6 +42,11 @@ temp <- clusterEvalQ(cl, source("~/DispersalEvolution/SimFunctions.R") )
 
 # Run the simulations
 Sims <- clusterApply(cl, x = SimVec, fun = SimFunc)
+
+SysCommand2 <- "gzip -r ~/DispersalEvolution/RangeEquilibrium/"
+SysCommand3 <- "gzip -r ~/DispersalEvolution/RangeExpansion/"
+system(SysCommand2)
+system(SysCommand3)
 
 # This implementation of openMPI doesn't seem to play nice with Rmpi,
 #    so instead of nicely shutting down the cluster within the script,

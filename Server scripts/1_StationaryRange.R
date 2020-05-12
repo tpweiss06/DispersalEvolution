@@ -5,11 +5,13 @@
 # NOTE: Haploid is always associated with a monoecious value of TRUE even though
 #    it has no meaning for haploid organisms.
 Haploid <- FALSE
-monoecious <- FALSE
+monoecious <- TRUE
+omega <- 1   # start with 0, 0.5, and 1
+OutFile <- paste(Sys.Date(), "DipMono-1-Sims.csv", sep = "_")
 
 # Set the number of processors and number of simulations to be run
-nProc <- 24*6
-NumSims <- 100
+nProc <- 24*9
+NumSims <- 1000
 
 # Set the working directory and load necessary data and libraries
 setwd("~/DispersalEvolution/")
@@ -29,13 +31,12 @@ dmax <- 6
 ExpandGens <- 200
 rho <- 0.1
 NumRands <- 1000000
-omega <- 1
 gamma <- 0.02 
 tau <- 15 
 lambda <- 10
 DispVar <- 10
 BurnIn <- 50000
-v <- 2
+v <- 3
 
 # Now set the L values to be used across simulations
 Lseq <- c(1, 2, 4, 8, 16, 32)
@@ -92,8 +93,9 @@ for(i in 1:TotalSims){
      SimIDs$omega[i] <- Sims[[i]]$omega
 }
 
-OutFile <- paste(Sys.Date(), "DiploidDioSims.csv", sep = "_")
 write.csv(SimIDs, file = OutFile)
+
+system("gzip -r ~/DispersalEvolution/RangeEquilibrium")
 
 # This implementation of openMPI doesn't seem to play nice with Rmpi,
 #    so instead of nicely shutting down the cluster within the script,
