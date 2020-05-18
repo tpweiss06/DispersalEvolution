@@ -859,14 +859,10 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory
 }
 
 ###### RangeExpand
-RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumPrefix = NULL,
-                        ExpandPrefix = NULL){
+RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){#, EquilibriumPrefix = NULL,
+                        #ExpandPrefix = NULL){
      # Load the necessary parameters
-     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
-     
-     # Create the results directory
-     ResultsDir <- paste(ExpandPrefix, SimDir, sep = "/")
-     dir.create(ResultsDir)
+     source(paste(SimDir, "parameters.R", sep = "/"))
      
      # Next, create the population column indices
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
@@ -910,7 +906,7 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
      SumStatRow <- 1
      
      # Load in the equilibrium population matrix
-     InputMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     InputMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
      PopMat <- as.matrix(InputMat)
      PopSize <- nrow(PopMat)
      
@@ -1025,10 +1021,24 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
                }
           }
      }
+     # Finally, save the results here
+     PopMatNames <- c("x0", "x1", paste("disp1", 1:L, sep = "_"))
+     if(!Haploid){
+             PopMatNames <- c(PopMatNames, paste("disp2", 1:L, sep = "_"))
+     }
+     if( !(is.null(PopIndices$sex)) ){
+             PopMatNames <- c(PopMatNames, "sex")
+     }
+     colnames(PopMat) <- PopMatNames
+     # Try saving the whole thing and see how big it is for a few sims. If necessary
+     #  I can adjust this to just save parts of the matrix that are within 100 
+     #  (or whatever distance) of the edge of the expansion.
+     write.csv(PopMat, file = paste(SimDir, "ExpansionPopMat.csv", sep = "/"), 
+               row.names = FALSE, quote = FALSE)
      # Save the summary statistics
      colnames(SumStats) <- c("x", "gen", "abund", "dBar", "GenVar")
      SumStats <- SumStats[1:(SumStatRow - 1),]
-     write.csv(SumStats, file = paste(ResultsDir, "SummaryStats.csv", sep = "/"),
+     write.csv(SumStats, file = paste(SimDir, "ExpansionSummaryStats.csv", sep = "/"),
                row.names = FALSE, quote = FALSE)
      return(NULL)
 }
@@ -1043,16 +1053,12 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
 #              on a server or not (which affects how file paths are determined).
 ### OUTPUT
 # The population matrix for the last generation of the simulation
-RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumPrefix = NULL,
-                       ShiftPrefix = NULL, NewSpeed = NA){
+RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, NewSpeed = NA){
      # Load the necessary parameters
-     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     source(paste(SimDir, "parameters.R", sep = "/"))
      if(!is.na(NewSpeed)){
           v <- NewSpeed
      }
-     # Create the results directory path
-     ResultsDir <- paste(ShiftPrefix, SimDir, sep = "/")
-     dir.create(ResultsDir)
      
      # Next, create the population column indices
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
@@ -1090,7 +1096,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
      DirectIndex <- 1
      
      # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
      PopMat <- as.matrix(PopMat)
      PopSize <- nrow(PopMat)
      
@@ -1225,7 +1231,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
      # Save the summary statistics
      colnames(SumStats) <- c("gen", "beta", "x", "abund", "dBar", "GenVar")
      SumStats <- SumStats[1:(SumStatRow - 1),]
-     write.csv(SumStats, file = paste(ResultsDir, "SummaryStats.csv", sep = "/"),
+     write.csv(SumStats, file = paste(ResultsDir, "ShiftSummaryStats.csv", sep = "/"),
                row.names = FALSE, quote = FALSE)
      
      # Finally, save the results here
@@ -1237,7 +1243,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
           PopMatNames <- c(PopMatNames, "sex")
      }
      colnames(PopMat) <- PopMatNames
-     write.csv(PopMat, file = paste(ResultsDir, "ShiftedPopMat.csv", sep = "/"), 
+     write.csv(PopMat, file = paste(ResultsDir, "ShiftPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      return(NULL)
 }
@@ -1382,9 +1388,9 @@ ExtraShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewSp
 #              on a server or not (which affects how file paths are determined).
 ### OUTPUT
 # A boolean variable indicating extinction
-NoEvolShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewSpeed = NA){
+NoEvolShift <- function(SimDir, parallel = FALSE, NewSpeed = NA){
      # Load the necessary parameters
-     source(paste(EquilibriumPrefix, SimDir, "parameters.R", sep = "/"))
+     source(paste(SimDir, "parameters.R", sep = "/"))
      if(!is.na(NewSpeed)){
           v <- NewSpeed
      }
@@ -1409,7 +1415,7 @@ NoEvolShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewS
      OffspringIndex <- 1
      
      # Load in the equilibrium population matrix
-     PopMat <- read.csv(paste(EquilibriumPrefix, SimDir, "EquilibriumPopMat.csv", sep = "/"))
+     PopMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
      PopMat <- as.matrix(PopMat)
      PopSize <- nrow(PopMat)
      
