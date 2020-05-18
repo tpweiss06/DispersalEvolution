@@ -112,11 +112,13 @@ rStudKern <- function(n, d){
 #    Kmax: The maximum achievable carrying capacity in the landscape
 #    Expand: A boolean variable indicating whether the current simulation is a
 #              strict range expansion or not
+#    omega: The probability of sefl-fertilization. Used to check for 0 population growth
+#         if only 1 individual and obligatory outcrossing (omega == 0)
 #    PopMat, Haploid, PopIndices as previously defined
 ### OUTPUTS
 # A vector of the realized abundances of each occupied patch in the next generation
 Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, psi, CurBeta,
-                      tau, gamma, Kmax, Expand){
+                      tau, gamma, Kmax, Expand, omega){
      # Check that Rmax is within the proper range
      if(R < 1){
           write("R values less than 1 will result in negative alpha values, causing unrestricted population growth",
@@ -159,7 +161,14 @@ Reproduce <- function(R, OccPatches, PopMat, Haploid, PopIndices, psi, CurBeta,
                     Ntp1[i] <- PatchAbund * R * exp(-1 * Alphas[i] * PatchAbund)
                } else{
                     if(is.null(PopIndices$sex)){
-                         Ntp1[i] <- PatchAbund * R * exp(-1 * Alphas[i] * PatchAbund)
+                         # check for obligatory outcrossing (omega == 0) and only
+                         #    1 individual. If true, then 0 population growth, but
+                         #    if not, then normal growth
+                         if((omega == 0) & (PatchAbund == 1)){
+                              Ntp1[i] <- 0
+                         }else{
+                              Ntp1[i] <- PatchAbund * R * exp(-1 * Alphas[i] * PatchAbund)
+                         }
                     } else{
                          CurFemales <- which( (PopMat[,PopIndices$x1] == OccPatches[i]) & 
                                                    (PopMat[,PopIndices$sex] == 1) )
@@ -237,13 +246,13 @@ NextPopMat <- function(Ntp1, PopIndices, OccPatches, psi, SumNtp1, L, PopMat, Lo
                          parent2 <- rep(locals, Ntp1[i])
                     } else{
                          parent1 <- sample(locals, size = Ntp1[i], replace = TRUE)
-                         SelfFert <- SelfRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
                          parent2 <- sample(locals, size = Ntp1[i], replace = TRUE)
                          SameParent <- which(parent1 == parent2)
                          for(j in SameParent){
                               ParentPool <- setdiff(locals, parent1[j])
                               parent2[j] <- sample(ParentPool, size = 1)
                          }
+                         SelfFert <- SelfRands[(OffspringIndex + StartRow):(OffspringIndex + EndRow)]
                          parent2 <- ifelse(SelfFert == 1, parent1, parent2)
                     }
                     parents <- cbind(parent1, parent2)
@@ -729,7 +738,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory
                                R = R, Kmax = Kmax, PopMat = PopMat,
                                PopIndices = PopIndices, psi = psi,
                                OccPatches = OccPatches, Haploid = Haploid,
-                               Expand = FALSE)
+                               Expand = FALSE, omega = omega)
      
      # Make sure the population isn't going immediately extinct
      PopSize <- sum(RealizedNtp1)
@@ -739,7 +748,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory
                                     R = R, Kmax = Kmax, PopMat = PopMat,
                                     PopIndices = PopIndices, psi = psi,
                                     OccPatches = OccPatches, Haploid = Haploid,
-                                    Expand = FALSE)
+                                    Expand = FALSE, omega = omega)
           PopSize <- sum(RealizedNtp1)
           ExtCounter <- ExtCounter + 1
      }
@@ -792,7 +801,7 @@ StationarySim <- function(parameters, parallel = FALSE, SimID = NA, SimDirectory
                                          R = R, Kmax = Kmax, PopMat = PopMat,
                                          PopIndices = PopIndices, psi = psi,
                                          OccPatches = OccPatches, Haploid = Haploid,
-                                         Expand = FALSE)
+                                         Expand = FALSE, omega = omega)
                
                # Now create a new population matrix for the next generation
                PopSize <- sum(RealizedNtp1)
@@ -957,7 +966,7 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000, Equilibrium
                                     R = R, Kmax = Kmax, PopMat = PopMat,
                                     PopIndices = PopIndices, psi = psi,
                                     OccPatches = OccPatches, Haploid = Haploid,
-                                    Expand = TRUE)
+                                    Expand = TRUE, omega = omega)
           
           # Now create a new population matrix for the next generation
           PopSize <- sum(RealizedNtp1)
@@ -1151,7 +1160,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, EquilibriumP
                                          R = R, Kmax = Kmax, PopMat = PopMat,
                                          PopIndices = PopIndices, psi = psi,
                                          OccPatches = OccPatches, Haploid = Haploid,
-                                         Expand = FALSE)
+                                         Expand = FALSE, omega = omega)
                
                # Now create a new population matrix for the next generation
                PopSize <- sum(RealizedNtp1)
@@ -1323,7 +1332,7 @@ ExtraShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewSp
                                          R = R, Kmax = Kmax, PopMat = PopMat,
                                          PopIndices = PopIndices, psi = psi,
                                          OccPatches = OccPatches, Haploid = Haploid,
-                                         Expand = FALSE)
+                                         Expand = FALSE, omega = omega)
                
                # Now create a new population matrix for the next generation
                PopSize <- sum(RealizedNtp1)
@@ -1440,7 +1449,7 @@ NoEvolShift <- function(SimDir, parallel = FALSE, EquilibriumPrefix = NULL, NewS
                                          R = R, Kmax = Kmax, PopMat = PopMat,
                                          PopIndices = PopIndices, psi = psi,
                                          OccPatches = OccPatches, Haploid = Haploid,
-                                         Expand = FALSE)
+                                         Expand = FALSE, omega = omega)
                
                # Now create a new population matrix for the next generation
                PopSize <- sum(RealizedNtp1)
