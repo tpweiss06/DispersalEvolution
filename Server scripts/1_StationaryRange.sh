@@ -1,21 +1,22 @@
 #!/bin/bash -l
-#PBS -l walltime=60:00:00,nodes=9:ppn=24,mem=525gb
-#PBS -m abe
-#PBS -M cweissle@umn.edu
-#PBS -j oe
+
+#SBATCH --account=rangeecoevomodels
+#SBATCH --time=05:00:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=32
+#SBATCH --cpus-per-task=1
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=cweissle@uwyo.edu
+#SBATCH --job-name=StationaryRangeTestRun
 
 # Set the parameter combination to use and generate names of R scripts and log files
 Rscript=1_StationaryRange.R
 LogFile=1_StationaryRange.log
 
 # Change to the relevant working directory
-cd ~/DispersalEvolution/
+cd /project/rangeecoevomodels/cweissle/DispEv/
 
 # Load R and MPI
-module load R/3.4.4
-module load ompi/3.0.0/gnu-7.2.0-centos7
-
-export RMPI_TYPE=OPENMPI
-export OMPI_MCA_mpi_warn_on_fork=0
+module load gcc/7.3.0 r/3.5.3 openmpi/3.1.0 r-rmpi/0.6-9-r353-py27
 
 mpirun -np 1 R CMD BATCH --no-restore --no-save --quiet $Rscript $LogFile
