@@ -1,17 +1,17 @@
 #!/bin/bash -l
 
 #SBATCH --account=rangeecoevomodels
-#SBATCH --time=05:00:00
-#SBATCH --nodes=1
+#SBATCH --time=48:00:00
+#SBATCH --nodes=2
 #SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=cweissle@uwyo.edu
-#SBATCH --job-name=StationaryRangeTestRun
+#SBATCH --job-name=TestRun
 
 # Set the parameter combination to use and generate names of R scripts and log files
-Rscript=1_StationaryRange.R
-LogFile=1_StationaryRange.log
+Rscript=RunSimulations.R
+LogFile=RunSimulations.log
 
 # Change to the relevant working directory
 cd /project/rangeecoevomodels/cweissle/DispEv/
