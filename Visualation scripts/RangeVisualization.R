@@ -2,7 +2,7 @@
 #    space for the stable range according to model parameters
 
 # First, read in the simulation functions and use those
-source("~/Desktop/PostdocResearch/DispersalEvolution/GitRepo/SimFunctions.R")
+source("~/Desktop/Wyoming/DispersalEvolution/GitRepo/SimFunctions.R")
 
 # Set the parameters to use for the visualization
 Beta <- 0
