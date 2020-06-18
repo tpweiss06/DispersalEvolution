@@ -1030,10 +1030,12 @@ RangeExpand <- function(SimDir, parallel = FALSE, SumMatSize = 5000){#, Equilibr
              PopMatNames <- c(PopMatNames, "sex")
      }
      colnames(PopMat) <- PopMatNames
-     # Try saving the whole thing and see how big it is for a few sims. If necessary
-     #  I can adjust this to just save parts of the matrix that are within 100 
-     #  (or whatever distance) of the edge of the expansion.
-     write.csv(PopMat, file = paste(SimDir, "ExpansionPopMat.csv", sep = "/"), 
+     
+     # To save space, extract and save only the patches that are within 50 patches of the edge
+     Edges <- range(PopMat[,"x0"])
+     EdgePop <- which((PopMat[,"x0"] <= Edges[1] + 50) | (PopMat[,"x0"] >= Edges[2] - 50))
+     EdgePopMat <- PopMat[EdgePop,]
+     write.csv(EdgePopMat, file = paste(SimDir, "ExpansionEdgePopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      # Save the summary statistics
      colnames(SumStats) <- c("x", "gen", "abund", "dBar", "GenVar")
@@ -1231,7 +1233,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, NewSpeed = N
      # Save the summary statistics
      colnames(SumStats) <- c("gen", "beta", "x", "abund", "dBar", "GenVar")
      SumStats <- SumStats[1:(SumStatRow - 1),]
-     write.csv(SumStats, file = paste(ResultsDir, "ShiftSummaryStats.csv", sep = "/"),
+     write.csv(SumStats, file = paste(SimDir, "ShiftSummaryStats.csv", sep = "/"),
                row.names = FALSE, quote = FALSE)
      
      # Finally, save the results here
@@ -1243,7 +1245,7 @@ RangeShift <- function(SimDir, parallel = FALSE, SumMatSize = 5000, NewSpeed = N
           PopMatNames <- c(PopMatNames, "sex")
      }
      colnames(PopMat) <- PopMatNames
-     write.csv(PopMat, file = paste(ResultsDir, "ShiftPopMat.csv", sep = "/"), 
+     write.csv(PopMat, file = paste(SimDir, "ShiftPopMat.csv", sep = "/"), 
                row.names = FALSE, quote = FALSE)
      return(NULL)
 }

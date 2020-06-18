@@ -1,3 +1,0 @@
-These simulations represent the same model as I presented at ESA (i.e. no significant alterations). I just ran each type of simulation for 1,000 realizations to try and get a cleaned up, accurate assessment of the dynamics. 
-
-The code was run on MSI in the last few months of 2019 (i.e. the before times). My folder on MSI still has the scripts used.

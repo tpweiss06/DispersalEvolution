@@ -1,8 +1,8 @@
 #!/bin/bash -l
 
 #SBATCH --account=rangeecoevomodels
-#SBATCH --time=48:00:00
-#SBATCH --nodes=2
+#SBATCH --time=120:00:00
+#SBATCH --nodes=20
 #SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL
