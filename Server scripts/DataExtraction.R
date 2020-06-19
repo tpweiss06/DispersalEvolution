@@ -140,13 +140,13 @@ Sims <- clusterApply(cl, x = SimVec, fun = SimFunc)
 
 # Now process the Sims and save the updated matrix
 for(i in 1:nrow(AllSims)){
-    AllSims$distance <- Sims[[i]]$distance
-    AllSims$DeltaPhenExp <- Sims[[i]]$DeltaPhenExp
-    AllSims$DeltaGenExp <- Sims[[i]]$DeltaGenExp
-    AllSims$DeltaPhenShift <- Sims[[i]]$DeltaPhenShift
-    AllSims$DeltaGenShift <- Sims[[i]]$DeltaGenShift
-    AllSims$ExtRiskEvol <- Sims[[i]]$ExtRiskEvol
-    AllSims$ExtRiskNoEvol <- Sims[[i]]$ExtRiskNoEvol
+    AllSims$distance[i] <- Sims[[i]]$distance
+    AllSims$DeltaPhenExp[i] <- Sims[[i]]$DeltaPhenExp
+    AllSims$DeltaGenExp[i] <- Sims[[i]]$DeltaGenExp
+    AllSims$DeltaPhenShift[i] <- Sims[[i]]$DeltaPhenShift
+    AllSims$DeltaGenShift[i] <- Sims[[i]]$DeltaGenShift
+    AllSims$ExtRiskEvol[i] <- Sims[[i]]$ExtRiskEvol
+    AllSims$ExtRiskNoEvol[i] <- Sims[[i]]$ExtRiskNoEvol
 }
 write.csv(AllSims, file = "/project/rangeecoevomodels/cweissle/DispEv/SimsWithResults.csv", 
           row.names = FALSE, quote = FALSE)
