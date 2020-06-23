@@ -16,7 +16,7 @@
 
 # Set the number of nodes and the number of tasks per node
 # NOTE: this should match the .sh file
-nodes <- 2
+nodes <- 4
 ntasks_per_node <- 32
 TotalTasks <- nodes*ntasks_per_node
 
@@ -214,7 +214,7 @@ for(i in 1:nrow(AllSims)){
     AllSims$ExpVel30_2[i] <- Sims[[i]]$ExpVel30_2
     AllSims$ExpVel40_2[i] <- Sims[[i]]$ExpVel40_2
     AllSims$ExpVel50_2[i] <- Sims[[i]]$ExpVel50_2
-    AllSims$InitPhenExp[i] <- AllSims$InitPhenExp
+    AllSims$InitPhenExp[i] <- AllSims[[i]]$InitPhenExp
     AllSims$DeltaPhenShift[i] <- Sims[[i]]$DeltaPhenShift
     AllSims$DeltaGenShift[i] <- Sims[[i]]$DeltaGenShift
     AllSims$ExtRiskEvol[i] <- Sims[[i]]$ExtRiskEvol
