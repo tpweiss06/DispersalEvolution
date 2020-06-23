@@ -36,9 +36,9 @@ HapVals <- c(TRUE, FALSE, FALSE, FALSE, FALSE)
 monoVals <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
 omegaVals <- c(0, 0, 1, 0.5, 0)
 Lseq <- unique(Results$L)
-#### Figure 1
+###### Figure 1
 
-#### Figure 2
+###### Figure 2
 # First get the data together (mean change in phenotpyes and variance with IQR)
 Fig2Data <- vector(mode = "list", length = 5)
 for(i in 1:5){
@@ -146,8 +146,194 @@ pdf(file = "ResultFigures/FigureS1_Shift.pdf", width = 10, height = 6, onefile =
         mtext("Number of loci", side = 1, outer = TRUE, line = 1.5)
 dev.off()
 
+###### Figure 3
+# First get the data together (mean distance spread and CV for each scenario)
+Fig3Data <- vector(mode = "list", length = 5)
+for(i in 1:5){
+        Dist <- rep(NA, 6)
+        CV <- rep(NA, 6)
+        StdDev <- rep(NA, 6)
+        for(l in 1:6){
+                CurData <- subset(Results, L == Lseq[l] & Haploid == HapVals[i] & monoecious == monoVals[i] & omega == omegaVals[i])
+                Dist[l] <- mean(CurData$distance)
+                StdDev[l] <- sd(CurData$distance)
+                CV[l] <-  StdDev[l] / Dist[l]
+        }
+        Fig3Data[[i]] <- data.frame(L = Lseq, Dist, StdDev, CV)
+}
+names(Fig3Data) <- Scenarios
 
+# Now make the main figure
+pdf(file = "ResultFigures/Figure3.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(mfrow = c(2,1), oma = c(3,4,3,1.5), mar = c(1.5,1,1.5,1), family = "serif")
+        plot(NA, NA, xlim = range(Lseq), ylim = c(475, 700), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq, labels = Lseq)
+        mtext("Mean distance spread", side = 2, line = 3.2)
 
+        # Put the legend on the figure
+        legend(x = 1, y = 785, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
+        legend(x = 9, y = 775, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
+               xpd = NA, horiz = TRUE, box.lty = 2)
+        mtext("Sexual (monoecious)", side = 3, line = 1.25, outer = TRUE, adj = 0.65)
+        # Graph the data
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig3Data[[i]]$Dist, lty = 1, col = ScenCols[i])
+        }
+        plot(NA, NA, xlim = range(Lseq), ylim = c(0.105, 0.135), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq)
+        mtext("CV of distance spread", side = 2, line = 3.2)
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig3Data[[i]]$CV, lty = 1, col = ScenCols[i])
+        }
+        mtext("Number of loci", side = 1, outer = TRUE, line = 1.5)
+dev.off()
 
+pdf(file = "ResultFigures/Figure3Alt.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(mfrow = c(2,1), oma = c(3,4,3,1.5), mar = c(1.5,1,1.5,1), family = "serif")
+        plot(NA, NA, xlim = range(Lseq), ylim = c(475, 700), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq, labels = Lseq)
+        mtext(expression(mu ["spread"]), side = 2, line = 3)
+        
+        # Put the legend on the figure
+        legend(x = 1, y = 785, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
+        legend(x = 9, y = 775, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
+               xpd = NA, horiz = TRUE, box.lty = 2)
+        mtext("Sexual (monoecious)", side = 3, line = 1.25, outer = TRUE, adj = 0.65)
+        # Graph the data
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig3Data[[i]]$Dist, lty = 1, col = ScenCols[i])
+        }
+        plot(NA, NA, xlim = range(Lseq), ylim = c(50, 85), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq)
+        mtext(expression(sigma ["spread"]), side = 2, line = 3)
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig3Data[[i]]$StdDev, lty = 1, col = ScenCols[i])
+        }
+        mtext("Number of loci", side = 1, outer = TRUE, line = 1.5)
+dev.off()
 
+pdf(file = "ResultFigures/Figure3Alt2.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(mfrow = c(2,1), oma = c(3,4,3,1.5), mar = c(1.5,1,1.5,1), family = "serif")
+        plot(NA, NA, xlim = range(Lseq), ylim = c(475, 700), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq, labels = Lseq)
+        mtext(expression(mu ["spread"]), side = 2, line = 3)
 
+        # Put the legend on the figure
+        legend(x = 1, y = 785, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
+        legend(x = 9, y = 775, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
+               xpd = NA, horiz = TRUE, box.lty = 2)
+        mtext("Sexual (monoecious)", side = 3, line = 1.25, outer = TRUE, adj = 0.65)
+        # Graph the data
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig3Data[[i]]$Dist, lty = 1, col = ScenCols[i])
+        }
+        plot(NA, NA, xlim = c(475, 700), ylim = c(50, 85), main = "", ylab = "", 
+             xlab = "", las = 1)
+        mtext(expression(sigma ["spread"]), side = 2, line = 3)
+        mtext(expression(mu ["spread"]), side = 1, line = 3)
+        for(i in 1:5){
+                lines(x = Fig3Data[[i]]$Dist, y = Fig3Data[[i]]$StdDev, lty = 1, col = ScenCols[i])
+        }
+        #mtext("Number of loci", side = 1, outer = TRUE, line = 1.5)
+dev.off()
+
+# Maybe try one more alt figure where the bottom panel is loci on the x axis and 
+#       deviation from pulled wave expectation (root(2rd)) on the y-axis with d
+#       being the final dispersal phenotype and v measured over the last 50 
+#       generations...
+#       To do this, I'll have to start back with data extraction (or do a separate
+#       script). I could just add a velocity column to the existing one and then
+#       I would have all the info I need (I think?). Double check that R could be
+#       accurately measured for both asexual and sexual (what do I do in the reproduce
+#       function?). Check the scripts from the AmNat paper to double check.
+
+# Can take ln(R) to be r; need to calculate p = probability of leaving patch (2017 Nat Commun paper)
+#       - I think I just use R even in dioecious scenarios since I am tracking the full population
+#               and the equation takes account of adjusting R for females
+# To calculate p, take the mean dispersal phenotype and use 1 - pexp(q = 1, rate = 1/dBar) to get the
+#       probability of dispersing out of the current patch
+# So, I will need to adjust the data extraction script to also give me: (1) mean dispersal phenotype at edge,
+#       (2) expansion speed over previous 20 generations, (3) expansion speed over previous 10 generations
+
+###### Figure 4
+# First get the data together (mean distance spread and CV for each scenario)
+Fig4Data <- vector(mode = "list", length = 5)
+NoEvolExtRisk <- matrix(data = NA, nrow = 5, ncol = 6)
+for(i in 1:5){
+        EvolExtRisk <- rep(NA, 6)
+        for(l in 1:6){
+                CurData <- subset(Results, L == Lseq[l] & Haploid == HapVals[i] & monoecious == monoVals[i] & omega == omegaVals[i])
+                EvolExtRisk[l] <- mean(CurData$ExtRiskEvol)
+                NoEvolExtRisk[i,l] <- mean(CurData$ExtRiskNoEvol)
+        }
+        Fig4Data[[i]] <- data.frame(L = Lseq, EvolExtRisk)
+}
+names(Fig4Data) <- Scenarios
+
+pdf(file = "ResultFigures/NoEvolRisk.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        plot(x = NA, y = NA, xlim = range(Lseq), ylim = c(0.7, 1), xlab = "Number of loci", ylab = "Extinction risk", las =1)
+        for(i in 1:5){
+                lines(x = Lseq, y = NoEvolExtRisk[i,], col = ScenCols[i])
+        }
+dev.off()
+# There's very little variation among loci (as expected), so I will average across them
+#       In fact, I think this would be better demonstrated in a table since there's really
+#       only variation between mate finding Allee effect vs. not.
+NoEvolRisk <- rowMeans(NoEvolExtRisk)
+# Asexual               :0.803
+# Sexual (dioecious)    :1
+# Obligate selfing      :0.832
+# Partial selfing       :0.842
+# Obligate outcrossing  :1
+
+pdf(file = "ResultFigures/Figure4.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(family = "serif")
+        plot(NA, NA, xlim = range(Lseq), ylim = c(0, 1), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq, labels = Lseq)
+        mtext("Extinction probability", side = 2, line = 3.2)
+        mtext("Number of loci", side = 1, line = 2.5)
+        # Put the legend on the figure
+        legend(x = 1, y = 1.2, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
+        legend(x = 9, y = 1.17, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
+               xpd = NA, horiz = TRUE, box.lty = 2)
+        mtext("Sexual (monoecious)", side = 3, line = 2.75, adj = 0.65)
+        # Graph the data
+        for(i in 1:5){
+                lines(x = Lseq, y = Fig4Data[[i]]$EvolExtRisk, lty = 1, col = ScenCols[i])
+        }
+dev.off()
+
+###### Figure 5
+# Figure 5: A single panel showing the change in extinction risk due to evolution
+#    across loci.
+# First get the data together (mean distance spread and CV for each scenario)
+DeltaExtRisk <- matrix(NA, nrow = 5, ncol = 6)
+for(i in 1:5){
+        DeltaExtRisk[i,] <- Fig4Data[[i]]$EvolExtRisk - NoEvolRisk[i] 
+}
+
+# Make the figure
+pdf(file = "ResultFigures/Figure5.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(family = "serif")
+        plot(NA, NA, xlim = range(Lseq), ylim = c(-0.8, 0.1), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = Lseq, labels = Lseq)
+        mtext("Change in extinction probability", side = 2, line = 3.2)
+        mtext("Number of loci", side = 1, line = 2.5)
+        # Put the legend on the figure
+        legend(x = 1, y = 0.275, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
+        legend(x = 9, y = 0.25, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
+               xpd = NA, horiz = TRUE, box.lty = 2)
+        mtext("Sexual (monoecious)", side = 3, line = 2.75, adj = 0.65)
+        abline(h = 0, lty = 2, col = "grey")
+        # Graph the data
+        for(i in 1:5){
+                lines(x = Lseq, y = DeltaExtRisk[i,], lty = 1, col = ScenCols[i])
+        }
+dev.off()
