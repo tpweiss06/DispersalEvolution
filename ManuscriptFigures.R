@@ -157,6 +157,11 @@ dev.off()
 
 ###### Figure 3
 # First get the data together (mean distance spread and CV for each scenario)
+
+### This figure will be updated with the results from the no evolution expansions rather than using the
+#       approximation
+
+
 R <- 2
 r <- log(R)
 Fig3Data <- vector(mode = "list", length = 5)
@@ -234,37 +239,44 @@ for(i in 1:5){
 names(Fig4Data) <- Scenarios
 
 pdf(file = "ResultFigures/NoEvolRisk.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        plot(x = NA, y = NA, xlim = range(Lseq), ylim = c(0.7, 1), xlab = "Number of loci", ylab = "Extinction risk", las =1)
+        par(mar = c(5, 4, 1, 1), family = "serif")
+        plot(x = NA, y = NA, xlim = c(-0.05, 1.05), ylim = c(0.4, 1), xlab = "Number of loci", 
+             ylab = "Extinction risk", las =1, xaxt = "n")
+        axis(1, at = LseqLocs, labels = Lseq)
+        axis(2, at = seq(0.4, 1, by = 0.02), tcl = -0.25, labels = FALSE)
+        legend("bottom", legend = Scenarios, pch = 21:25, col = ScenCols, pt.bg = ScenCols, bty = "n", ncol = 2)
         for(i in 1:5){
-                lines(x = Lseq, y = NoEvolExtRisk[i,], col = ScenCols[i])
+                points(x = xLocs[i,], y = NoEvolExtRisk[i,], col = ScenCols[i], 
+                      pch = 20 + i, bg = ScenCols[i])
         }
 dev.off()
 # There's very little variation among loci (as expected), so I will average across them
 #       In fact, I think this would be better demonstrated in a table since there's really
 #       only variation between mate finding Allee effect vs. not.
 NoEvolRisk <- rowMeans(NoEvolExtRisk)
-# Asexual               :0.803
-# Sexual (dioecious)    :1
-# Obligate selfing      :0.832
-# Partial selfing       :0.842
-# Obligate outcrossing  :1
+# Asexual               :0.8028
+# Obligate selfing      :0.8332
+# Partial selfing       :0.8425
+# Obligate outcrossing  :0.9998
+# Sexual (dioecious)    :1.0000
 
 pdf(file = "ResultFigures/Figure4.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        par(family = "serif")
+        par(family = "serif", mar = c(3, 4, 1, 1))
         plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(0, 1), main = "", ylab = "", 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
-        mtext("Extinction probability", side = 2, line = 3.2)
-        mtext("Number of loci", side = 1, line = 2.5)
-        # Put the legend on the figure
-        legend(x = 0.2, y = 1.2, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
-        legend(x = 0.8, y = 1.17, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
-               xpd = NA, horiz = TRUE, box.lty = 2)
-        mtext("Sexual (monoecious)", side = 3, line = 2.75, adj = 0.65)
+        axis(side = 2, at = seq(0, 1, by = 0.05), tcl = -0.25, labels = FALSE)
+        mtext("Extinction probability", side = 2, line = 2.5)
+        mtext("Number of loci", side = 1, line = 2)
         # Graph the data
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig4Data[[i]]$EvolExtRisk, pch = 20+i, col = ScenCols[i], bg = ScenCols[i])
         }
+        # Put the legend on the figure
+        legend(x = -0.1, y = 0.3, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
+               pt.bg = ScenCols[1:3], bty = "n", yjust = 1)
+        legend(x = 0.295, y = 0.2, legend = Scenarios[4:5], pch = 24:25, col = ScenCols[4:5],
+               pt.bg = ScenCols[4:5], bty = "n", yjust = 1)
 dev.off()
 
 ###### Figure 5
@@ -276,20 +288,21 @@ for(i in 1:5){
 
 # Make the figure
 pdf(file = "ResultFigures/Figure5.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        par(family = "serif")
-        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(-0.8, 0.1), main = "", ylab = "", 
+        par(family = "serif", mar = c(3, 4, 1, 1))
+        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(-0.9, 0.05), main = "", ylab = "", 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
-        mtext("Change in extinction probability", side = 2, line = 3.2)
-        mtext("Number of loci", side = 1, line = 2.5)
-        # Put the legend on the figure
-        legend(x = 0.2, y = 0.275, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
-        legend(x = 0.8, y = 0.25, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
-               xpd = NA, horiz = TRUE, box.lty = 2)
-        mtext("Sexual (monoecious)", side = 3, line = 2.75, adj = 0.65)
+        axis(side = 2, at = seq(-0.9, 0.1, by = 0.05), tcl = -0.25, labels = FALSE)
+        mtext("Change in extinction probability", side = 2, line = 2.75)
+        mtext("Number of loci", side = 1, line = 2)
         abline(h = 0, lty = 2, col = "grey")
         # Graph the data
         for(i in 1:5){
                 points(x = xLocs[i,], y = DeltaExtRisk[i,], pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
         }
+        # Put the legend on the figure
+        legend(x = -0.1, y = -0.575, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
+               pt.bg = ScenCols[1:3], bty = "n", yjust = 1)
+        legend(x = 0.305, y = -0.665, legend = Scenarios[4:5], pch = 24:25, col = ScenCols[4:5],
+               pt.bg = ScenCols[4:5], bty = "n", yjust = 1)
 dev.off()
