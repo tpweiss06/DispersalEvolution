@@ -1483,3 +1483,103 @@ NoEvolShift <- function(SimDir, parallel = FALSE, NewSpeed = NA){
      Extinct <- ifelse(PopSize > 0, 0, 1)
      return(Extinct)
 }
+
+
+###### NoEvolExpansion
+# This function will perform range expansion simulations without evolution to quantify
+#    the impact of evolution on distance spread. Actual population matrices
+#    won't be saved, it will merely return the distance travelled by the population
+#    in both directions
+### INPUTS
+# SimDir: the directory with the simulation files for the current simulation
+# parallel: A boolean variable indicating whether the simulations are being run
+#              on a server or not (which affects how file paths are determined).
+### OUTPUT
+# A vector with two entries: the positive distance travelled and the negative distance
+#    travelled
+NoEvolExpansion <- function(SimDir, parallel = FALSE, NewSpeed = NA){
+        # Load the necessary parameters
+        source(paste(SimDir, "parameters.R", sep = "/"))
+        
+        # Next, create the population column indices
+        PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
+        if(Haploid | monoecious){
+                NumCols <- 2 + 2^(1-Haploid) * L
+        } else{
+                NumCols <- 3 + 2 * L
+        }
+        
+        # Create vectors of random numbers for sex determination and dispersal direction
+        #    Since evolution is prevented in this simulation, the other vectors
+        #         of random numbers governing allele inheritence and mutation are
+        #         unnecessary.
+        if( !(is.null(PopIndices$sex)) ){
+                SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+        }
+        direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+        DirectIndex <- 1
+        OffspringIndex <- 1
+        
+        # Load in the equilibrium population matrix
+        PopMat <- read.csv(paste(SimDir, "EquilibriumPopMat.csv", sep = "/"))
+        PopMat <- as.matrix(PopMat)
+        PopSize <- nrow(PopMat)
+        
+        # Store the initial values for each allele to be sampled from later so that
+        #    allele frequencies always are drawn from the founding individuals
+        InitAlleles <- as.matrix(PopMat[,PopIndices$DispCols])
+        
+        # Now run the simulation
+        for(g in 1:ExpandGens){
+                if(PopSize > 0){
+                        disps <- DispPhen(PopMat = PopMat, PopSize = PopSize, PopIndices = PopIndices, 
+                                          Haploid = Haploid, L = L, dmax = dmax, rho = rho, lambda = lambda)
+                        
+                        # Check that there are enough entries left in the direction vector and repopulate
+                        #    it if necessary
+                        if( (DirectIndex + PopSize) > NumRands ){
+                                direction <- sample(c(-1,1), size = NumRands, replace = TRUE)
+                                DirectIndex <- 1
+                        }
+                        # Get the new post dispersal locations
+                        Deltas <- Disperse(d = disps, kern = kern, direction = direction,
+                                           DirectIndex = DirectIndex, PopSize = PopSize,
+                                           PopIndices = PopIndices, PopMat = PopMat)
+                        PopMat[,PopIndices$x1] <- PopMat[,PopIndices$x0] + Deltas
+                        
+                        # Update the angle index
+                        DirectIndex <- DirectIndex + PopSize
+                        
+                        # Generate the matrix of occupied patches and get population numbers
+                        #    for the next generation
+                        OccPatches <- unique(PopMat[,PopIndices$x1])
+                        RealizedNtp1 <- Reproduce(CurBeta = BetaInit, gamma = gamma, tau = tau,
+                                                  R = R, Kmax = Kmax, PopMat = PopMat,
+                                                  PopIndices = PopIndices, psi = psi,
+                                                  OccPatches = OccPatches, Haploid = Haploid,
+                                                  Expand = TRUE, omega = omega)
+                        
+                        # Now create a new population matrix for the next generation
+                        PopSize <- sum(RealizedNtp1)
+                        if(PopSize > 0){
+                                # Check the same for the OffspringIndex
+                                if( (OffspringIndex + PopSize) > NumRands){
+                                        if( !(is.null(PopIndices$sex)) ){
+                                                SexRands <- rbinom(n = NumRands, size = 1, prob = psi)
+                                                OffspringIndex <- 1
+                                        }
+                                }
+                                PopMat <- NextPopMatNoEvol(Ntp1 = RealizedNtp1, PopIndices = PopIndices,
+                                                           OccPatches = OccPatches, SumNtp1 = PopSize, 
+                                                           NumCols = NumCols, SexRands = SexRands,
+                                                           InitAlleles = InitAlleles, OffspringIndex = OffspringIndex)
+                                # And update the OffspringIndex
+                                OffspringIndex <- OffspringIndex + PopSize
+                        } else{
+                                PopMat <- matrix(NA, nrow = 0, ncol = NumCols)
+                        }
+                }
+        }
+        Distances <- abs(range(PopMat[,PopIndices$x0]))
+        return(Distances)
+}
