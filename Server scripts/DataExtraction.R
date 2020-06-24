@@ -214,7 +214,7 @@ for(i in 1:nrow(AllSims)){
     AllSims$ExpVel30_2[i] <- Sims[[i]]$ExpVel30_2
     AllSims$ExpVel40_2[i] <- Sims[[i]]$ExpVel40_2
     AllSims$ExpVel50_2[i] <- Sims[[i]]$ExpVel50_2
-    AllSims$InitPhenExp[i] <- AllSims[[i]]$InitPhenExp
+    AllSims$InitPhenExp[i] <- Sims[[i]]$InitPhenExp
     AllSims$DeltaPhenShift[i] <- Sims[[i]]$DeltaPhenShift
     AllSims$DeltaGenShift[i] <- Sims[[i]]$DeltaGenShift
     AllSims$ExtRiskEvol[i] <- Sims[[i]]$ExtRiskEvol
