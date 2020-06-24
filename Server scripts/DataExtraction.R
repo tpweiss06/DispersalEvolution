@@ -39,24 +39,11 @@ DeltaPhenShift <- rep(NA, nrow(AllSims))
 DeltaGenShift <- rep(NA, nrow(AllSims))
 ExtRiskEvol <- rep(NA, nrow(AllSims))
 ExtRiskNoEvol <- rep(NA, nrow(AllSims))
-InitPhenExp <- rep(NA, nrow(AllSims))
-FinalPhenExp_1 <- rep(NA, nrow(AllSims))
-FinalPhenExp_2 <- rep(NA, nrow(AllSims))
-ExpVel10_1 <- rep(NA, nrow(AllSims))
-ExpVel20_1 <- rep(NA, nrow(AllSims))
-ExpVel30_1 <- rep(NA, nrow(AllSims))
-ExpVel40_1 <- rep(NA, nrow(AllSims))
-ExpVel50_1 <- rep(NA, nrow(AllSims))
-ExpVel10_2 <- rep(NA, nrow(AllSims))
-ExpVel20_2 <- rep(NA, nrow(AllSims))
-ExpVel30_2 <- rep(NA, nrow(AllSims))
-ExpVel40_2 <- rep(NA, nrow(AllSims))
-ExpVel50_2 <- rep(NA, nrow(AllSims))
+DistNoEvol_1 <- rep(NA, nrow(AllSims))
+DistNoEvol_2 <- rep(NA, nrow(AllSims))
 AllSims <- cbind(AllSims, distance_1, distance_2, DeltaPhenExp_1, DeltaPhenExp_2, 
                  DeltaGenExp_1, DeltaGenExp_2, DeltaPhenShift, DeltaGenShift, 
-                 ExtRiskEvol, ExtRiskNoEvol, InitPhenExp, FinalPhenExp_1, 
-                 FinalPhenExp_2, ExpVel10_1, ExpVel10_2, ExpVel20_1, ExpVel20_2, 
-                 ExpVel30_1, ExpVel30_2, ExpVel40_1, ExpVel40_2, ExpVel50_1, ExpVel50_2)
+                 ExtRiskEvol, ExtRiskNoEvol, DistNoEvol_1, DistNoEvol_2)
 
 # Define the percentage of available patches constituting the range edge and use
 #    that percentage to calculate the equivalent number of patches
@@ -129,7 +116,7 @@ SimFunc <- function(i){
      # Now use them to calculate each of the necessary data outputs, starting with
      #    the distance travelled in the expansion
      distance_1 <- max(ExpandPopMat$x0)
-     distance_2 <- min(ExpandPopMat$x0)
+     distance_2 <- abs(min(ExpandPopMat$x0))
      DeltaPhenExp_1 <- ExpEdgeMeanPhen_1 - InitEdgeMeanPhen
      DeltaPhenExp_2 <- ExpEdgeMeanPhen_2 - InitEdgeMeanPhen
      DeltaGenExp_1 <- ExpGenVar_1 - InitGenVar
@@ -142,40 +129,19 @@ SimFunc <- function(i){
          DeltaGenShift <- NA
      }
      
-     # Finally, call the NoEvolShift function to assess the extinction risk under
-     #  a no evolution scenario
+     # Finally, call the no evolution functions to assess the expansion distance
+     #  and extinction risk without the influence of evolution
      ExtRiskNoEvol <- NoEvolShift(SimDir = CurSim, parallel = TRUE)
+     NoEvolDists <- NoEvolExpansion(SimDir = CurSim, parallel = TRUE)
+     DistNoEvol_1 <- NoEvolDists[1]
+     DistNoEvol_2 <- NoEvolDists[2]
      
-     # Now add the initial and final mean phenotypes for the expansion analyses
-     InitPhenExp <- InitEdgeMeanPhen
-     FinalPhenExp_1 <- ExpEdgeMeanPhen_1
-     FinalPhenExp_2 <- ExpEdgeMeanPhen_2
-     
-     # Load the summary stats for the expansion here and calculate the expansion
-     #  velocity over the past 10, 20, 30, 40, and 50 generations
-     SumStats <- read.csv(paste(CurSim, "ExpansionSummaryStats.csv", sep = "/"))
-     # First, calculate the velocity on the positive side of expansion
-     ExpVel10_1 <- (max(subset(SumStats, gen == 200)$x) - max(subset(SumStats, gen == 190)$x)) / 10
-     ExpVel20_1 <- (max(subset(SumStats, gen == 200)$x) - max(subset(SumStats, gen == 180)$x)) / 10
-     ExpVel30_1 <- (max(subset(SumStats, gen == 200)$x) - max(subset(SumStats, gen == 170)$x)) / 10
-     ExpVel40_1 <- (max(subset(SumStats, gen == 200)$x) - max(subset(SumStats, gen == 160)$x)) / 10
-     ExpVel50_1 <- (max(subset(SumStats, gen == 200)$x) - max(subset(SumStats, gen == 150)$x)) / 10
-     # Next, calculate the velocity on the negative side of expansion
-     ExpVel10_2 <- abs((min(subset(SumStats, gen == 200)$x) - min(subset(SumStats, gen == 190)$x))) / 10
-     ExpVel20_2 <- abs((min(subset(SumStats, gen == 200)$x) - min(subset(SumStats, gen == 180)$x))) / 10
-     ExpVel30_2 <- abs((min(subset(SumStats, gen == 200)$x) - min(subset(SumStats, gen == 170)$x))) / 10
-     ExpVel40_2 <- abs((min(subset(SumStats, gen == 200)$x) - min(subset(SumStats, gen == 160)$x))) / 10
-     ExpVel50_2 <- abs((min(subset(SumStats, gen == 200)$x) - min(subset(SumStats, gen == 150)$x))) / 10
      
      # Now return a list of each of these and sort them out after the cluster call, saving the final matrix
      Results <- list(distance_1 = distance_1, distance_2 = distance_2, DeltaPhenExp_1 = DeltaPhenExp_1, 
                      DeltaPhenExp_2 = DeltaPhenExp_2, DeltaGenExp_1 = DeltaGenExp_1, DeltaGenExp_2 = DeltaGenExp_2,
                      DeltaPhenShift = DeltaPhenShift, DeltaGenShift = DeltaGenShift, ExtRiskEvol = ExtRiskEvol, 
-                     ExtRiskNoEvol = ExtRiskNoEvol, InitPhenExp = InitPhenExp, FinalPhenExp_1 = FinalPhenExp_1,
-                     FinalPhenExp_2 = FinalPhenExp_2, ExpVel10_1 = ExpVel10_1, ExpVel10_2 = ExpVel10_2,
-                     ExpVel20_1 = ExpVel20_1, ExpVel20_2 = ExpVel20_2, ExpVel30_1 = ExpVel30_1,
-                     ExpVel30_2 = ExpVel30_2, ExpVel40_1 = ExpVel40_1, ExpVel40_2 = ExpVel40_2,
-                     ExpVel50_1 = ExpVel50_1, ExpVel50_2 = ExpVel50_2)
+                     ExtRiskNoEvol = ExtRiskNoEvol, DistNoEvol_1 = DistNoEvol_1, DistNoEvol_2 = DistNoEvol_2)
      return(Results)
 }
 
@@ -199,22 +165,11 @@ for(i in 1:nrow(AllSims)){
     AllSims$distance_1[i] <- Sims[[i]]$distance_1
     AllSims$DeltaPhenExp_1[i] <- Sims[[i]]$DeltaPhenExp_1
     AllSims$DeltaGenExp_1[i] <- Sims[[i]]$DeltaGenExp_1
-    AllSims$FinalPhenExp_1[i] <- Sims[[i]]$FinalPhenExp_1
-    AllSims$ExpVel10_1[i] <- Sims[[i]]$ExpVel10_1
-    AllSims$ExpVel20_1[i] <- Sims[[i]]$ExpVel20_1
-    AllSims$ExpVel30_1[i] <- Sims[[i]]$ExpVel30_1
-    AllSims$ExpVel40_1[i] <- Sims[[i]]$ExpVel40_1
-    AllSims$ExpVel50_1[i] <- Sims[[i]]$ExpVel50_1
     AllSims$distance_2[i] <- Sims[[i]]$distance_2
     AllSims$DeltaPhenExp_2[i] <- Sims[[i]]$DeltaPhenExp_2
     AllSims$DeltaGenExp_2[i] <- Sims[[i]]$DeltaGenExp_2
-    AllSims$FinalPhenExp_2[i] <- Sims[[i]]$FinalPhenExp_2
-    AllSims$ExpVel10_2[i] <- Sims[[i]]$ExpVel10_2
-    AllSims$ExpVel20_2[i] <- Sims[[i]]$ExpVel20_2
-    AllSims$ExpVel30_2[i] <- Sims[[i]]$ExpVel30_2
-    AllSims$ExpVel40_2[i] <- Sims[[i]]$ExpVel40_2
-    AllSims$ExpVel50_2[i] <- Sims[[i]]$ExpVel50_2
-    AllSims$InitPhenExp[i] <- Sims[[i]]$InitPhenExp
+    AllSims$DistNoEvol_1[i] <- Sims[[i]]$DistNoEvol_1
+    AllSims$DistNoEvol_2[i] <- Sims[[i]]$DistNoEvol_2
     AllSims$DeltaPhenShift[i] <- Sims[[i]]$DeltaPhenShift
     AllSims$DeltaGenShift[i] <- Sims[[i]]$DeltaGenShift
     AllSims$ExtRiskEvol[i] <- Sims[[i]]$ExtRiskEvol
