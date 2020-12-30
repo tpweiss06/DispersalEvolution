@@ -86,7 +86,7 @@ for(i in 1:5){
 }
 
 # Now make the main figure
-pdf(file = "ResultFigures/Figure2.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+pdf(file = "ResultFigures/Figure1.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
         par(mfrow = c(2,1), oma = c(3,3,1,1), mar = c(1.5,1,1.5,1), family = "serif")
         
         # Make the phenotype figure
@@ -94,7 +94,8 @@ pdf(file = "ResultFigures/Figure2.pdf", width = 5, height = 6, onefile = FALSE, 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
         axis(side = 2, at = seq(0, 1.4, by = 0.05), tcl = -0.25, labels = FALSE)
-        mtext(expression(paste(Delta, bar("d"), sep = "")), side = 2, line = 3)
+        #mtext(expression(paste(Delta, bar("d"), sep = "")), side = 2, line = 3)
+        mtext("Change in dispersal phenotype", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig2Data[[i]]$MeanPhenExp, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
                 segments(x0 = xLocs[i,], y0 = Fig2Data[[i]]$LwrPhenExp, x1 = xLocs[i,], y1 = Fig2Data[[i]]$UprPhenExp,
@@ -120,8 +121,8 @@ pdf(file = "ResultFigures/Figure2.pdf", width = 5, height = 6, onefile = FALSE, 
         mtext("b", side = 3, line = 0, adj = 0, font = 2, cex = 1.25)
 dev.off()
 
-# Now make the supplemental figure with the range shift results
-pdf(file = "ResultFigures/FigureS1_Shift.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+# Now make the figure with the range shift results
+pdf(file = "ResultFigures/Figure2.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
         par(mfrow = c(2,1), oma = c(3,3,1,1), mar = c(1.5,1,1.5,1), family = "serif")
 
         # Make the phenotype figure
@@ -129,7 +130,8 @@ pdf(file = "ResultFigures/FigureS1_Shift.pdf", width = 5, height = 6, onefile = 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
         axis(side = 2, at = seq(0, 1.65, by = 0.05), tcl = -0.25, labels = FALSE)
-        mtext(expression(paste(Delta, bar("d"), sep = "")), side = 2, line = 3)
+        #mtext(expression(paste(Delta, bar("d"), sep = "")), side = 2, line = 3)
+        mtext("Change in dispersal phenotype", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig2Data[[i]]$MeanPhenShift, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
                 segments(x0 = xLocs[i,], y0 = Fig2Data[[i]]$LwrPhenShift, x1 = xLocs[i,], y1 = Fig2Data[[i]]$UprPhenShift,
@@ -156,85 +158,122 @@ pdf(file = "ResultFigures/FigureS1_Shift.pdf", width = 5, height = 6, onefile = 
 dev.off()
 
 ###### Figure 3
+# distance with IQR for evolution and no evolution scenarios
 # First get the data together (mean distance spread and CV for each scenario)
-
-### This figure will be updated with the results from the no evolution expansions rather than using the
-#       approximation
-
-
-R <- 2
-r <- log(R)
 Fig3Data <- vector(mode = "list", length = 5)
 for(i in 1:5){
-        Dist <- rep(NA, 6)
-        LwrDist <- rep(NA, 6)
-        UprDist <- rep(NA, 6)
-        MeanDeviation <- rep(NA, 6)
-        LwrDeviation <- rep(NA, 6)
-        UprDeviation <- rep(NA, 6)
-        
+        DistEvol <- rep(NA, 6)
+        LwrDistEvol <- rep(NA, 6)
+        UprDistEvol <- rep(NA, 6)
+        DistNoEvol <- rep(NA, 6)
+        LwrDistNoEvol <- rep(NA, 6)
+        UprDistNoEvol <- rep(NA, 6)
+        Difference <- rep(NA, 6)
+        LwrDiff <- rep(NA, 6)
+        UprDiff <- rep(NA, 6)
         for(l in 1:6){
                 CurData <- subset(Results, L == Lseq[l] & Haploid == HapVals[i] & monoecious == monoVals[i] & omega == omegaVals[i])
-                Distances <- c(CurData$distance_1, abs(CurData$distance_2))
-                Dist[l] <- mean(Distances)
-                LwrDist[l] <- quantile(Distances, probs = 0.25)
-                UprDist[l] <-  quantile(Distances, probs = 0.75)
-                D <- (1/2) * mean(CurData$InitPhenExp)^2
-                ExpDist <- sqrt(2 * r * D) * 200
-                Deviations <- Distances - ExpDist
-                MeanDeviation[l] <- mean(Deviations)
-                LwrDeviation[l] <- quantile(Deviations, probs = 0.25)
-                UprDeviation[l] <- quantile(Deviations, probs = 0.75)
+                EvolDistances <- c(CurData$distance_1, CurData$distance_2)
+                NoEvolDistances <- c(CurData$DistNoEvol_1, CurData$DistNoEvol_2)
+                Diffs <- EvolDistances - NoEvolDistances
+                DistEvol[l] <- mean(EvolDistances)
+                LwrDistEvol[l] <- quantile(EvolDistances, probs = 0.25)
+                UprDistEvol[l] <-  quantile(EvolDistances, probs = 0.75)
+                DistNoEvol[l] <- mean(NoEvolDistances)
+                LwrDistNoEvol[l] <- quantile(NoEvolDistances, probs = 0.25)
+                UprDistNoEvol[l] <- quantile(NoEvolDistances, probs = 0.75)
+                Difference[l] <- mean(Diffs)
+                LwrDiff[l] <- quantile(Diffs, probs = 0.25)
+                UprDiff[l] <- quantile(Diffs, probs = 0.75)
         }
-        Fig3Data[[i]] <- data.frame(L = Lseq, Dist, LwrDist, UprDist, MeanDeviation, LwrDeviation, UprDeviation)
+        Fig3Data[[i]] <- data.frame(L = Lseq, DistEvol, LwrDistEvol, UprDistEvol, 
+                                    DistNoEvol, LwrDistNoEvol, UprDistNoEvol,
+                                    Difference, LwrDiff, UprDiff)
 }
-
-# Now make the main figure
-pdf(file = "ResultFigures/Figure3.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        par(mfrow = c(2,1), oma = c(3,4,3,1.5), mar = c(1.5,1,1.5,1), family = "serif")
-        
-        # Plot the mean distance spread
-        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(475, 700), main = "", ylab = "", 
+# Now make a figure for the mean distance spread with evolution
+pdf(file = "ResultFigures/Figure3_EvolDist.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(family = "serif", mar = c(3, 4, 1, 1))
+        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(400, 800), main = "", ylab = "", 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
-        mtext("Distance spread", side = 2, line = 3.2)
+        axis(side = 2, at = seq(400, 800, by = 25), tcl = -0.25, labels = FALSE)
+        mtext("Distance spread", side = 2, line = 2.75)
+        mtext("Number of loci", side = 1, line = 2)
+        # Graph the data
         for(i in 1:5){
-                points(x = xLocs[i,], y = Fig3Data[[i]]$Dist, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
-                segments(x0 = xLocs[i,], y0 = Fig3Data[[i]]$LwrDist, x1 = xLocs[i,], y1 = Fig3Data[[i]]$UprDist,
-                         col = ScenCols[i], lty = 1)
+                points(x = xLocs[i,], y = Fig3Data[[i]]$DistEvol, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
+                segments(x0 = xLocs[i,], y0 = Fig3Data[[i]]$LwrDistEvol, x1 = xLocs[i,], y1 = Fig3Data[[i]]$UprDistEvol,
+                         lty = 1, col = ScenCols[i])
         }
-        
         # Put the legend on the figure
-        legend(x = 0.2, y = 785, legend = Scenarios[1:2], inset = -0.25, lty = 1, col = ScenCols[1:2], bty = "n", xpd = NA)
-        legend(x = 0.8, y = 775, legend = Scenarios[3:5], inset = -0.25, lty = 1, col = ScenCols[3:5], 
-               xpd = NA, horiz = TRUE, box.lty = 2)
-        mtext("Sexual (monoecious)", side = 3, line = 1.25, outer = TRUE, adj = 0.65)
-        
-        # Plot the deviation from the Skellam approximation
-        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(-100, 100), main = "", ylab = "", 
-             xlab = "", las = 1, xaxt = "n")
-        axis(side = 1, at = LseqLocs, labels = Lseq)
-        mtext("Deviation from expectation", side = 2, line = 3.2)
-        for(i in 1:5){
-                points(x = xLocs[i,], y = Fig3Data[[i]]$MeanDeviation, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
-                segments(x0 = xLocs[i,], y0 = Fig3Data[[i]]$LwrDeviation, x1 = xLocs[i,], y1 = Fig3Data[[i]]$UprDeviation,
-                         col = ScenCols[i], lty = 1)
-        }
-        mtext("Number of loci", side = 1, outer = TRUE, line = 1.5)
+        legend(x = -0.1, y = 750, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
+               pt.bg = ScenCols[1:3], bty = "n", yjust = 0.5)
+        legend(x = 0.305, y = 710, legend = Scenarios[4:5], pch = 24:25, col = ScenCols[4:5],
+               pt.bg = ScenCols[4:5], bty = "n", yjust = 0)
 dev.off()
 
+# Now make a figure for the mean distance spread without evolution
+pdf(file = "ResultFigures/Figure3_NoEvolDist.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(family = "serif", mar = c(3, 4, 1, 1))
+        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(400, 800), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = LseqLocs, labels = Lseq)
+        axis(side = 2, at = seq(400, 800, by = 25), tcl = -0.25, labels = FALSE)
+        mtext("Distance spread", side = 2, line = 2.75)
+        mtext("Number of loci", side = 1, line = 2)
+        # Graph the data
+        for(i in 1:5){
+                points(x = xLocs[i,], y = Fig3Data[[i]]$DistNoEvol, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
+                segments(x0 = xLocs[i,], y0 = Fig3Data[[i]]$LwrDistNoEvol, x1 = xLocs[i,], y1 = Fig3Data[[i]]$UprDistNoEvol,
+                         lty = 1, col = ScenCols[i])
+        }
+        # Put the legend on the figure
+        legend(x = -0.1, y = 750, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
+               pt.bg = ScenCols[1:3], bty = "n", yjust = 0.5)
+        legend(x = 0.305, y = 710, legend = Scenarios[4:5], pch = 24:25, col = ScenCols[4:5],
+               pt.bg = ScenCols[4:5], bty = "n", yjust = 0)
+dev.off()
+
+# Now make a figure for the increase in distance spread due to evolution
+pdf(file = "ResultFigures/Figure3_DiffDist.pdf", width = 5, height = 3, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(family = "serif", mar = c(3, 4, 1, 1))
+        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(0, 250), main = "", ylab = "", 
+             xlab = "", las = 1, xaxt = "n")
+        axis(side = 1, at = LseqLocs, labels = Lseq)
+        axis(side = 2, at = seq(0, 300, by = 25), tcl = -0.25, labels = FALSE)
+        mtext("Change in distance spread", side = 2, line = 2.75)
+        mtext("Number of loci", side = 1, line = 2)
+        # Graph the data
+        for(i in 1:5){
+                points(x = xLocs[i,], y = Fig3Data[[i]]$Difference, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
+                segments(x0 = xLocs[i,], y0 = Fig3Data[[i]]$LwrDiff, x1 = xLocs[i,], y1 = Fig3Data[[i]]$UprDiff,
+                         lty = 1, col = ScenCols[i])
+        }
+        # Put the legend on the figure
+        legend(x = -0.1, y = 223, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
+               pt.bg = ScenCols[1:3], bty = "n", yjust = 0.5)
+        legend(x = 0.305, y = 197, legend = Scenarios[4:5], pch = 24:25, col = ScenCols[4:5],
+               pt.bg = ScenCols[4:5], bty = "n", yjust = 0)
+        # Finally, add a horizontal line at 0
+        abline(h = 0, lty = 2, col = "grey")
+dev.off()
 ###### Figure 4
 # First get the extinction risk data together
 Fig4Data <- vector(mode = "list", length = 5)
 NoEvolExtRisk <- matrix(data = NA, nrow = 5, ncol = 6)
 for(i in 1:5){
         EvolExtRisk <- rep(NA, 6)
+        ExtRiskLwr <- rep(NA, 6)
+        ExtRiskUpr <- rep(NA, 6)
         for(l in 1:6){
                 CurData <- subset(Results, L == Lseq[l] & Haploid == HapVals[i] & monoecious == monoVals[i] & omega == omegaVals[i])
                 EvolExtRisk[l] <- mean(CurData$ExtRiskEvol)
                 NoEvolExtRisk[i,l] <- mean(CurData$ExtRiskNoEvol)
+                CI <- 1.96 * sqrt((EvolExtRisk[l] * (1 - EvolExtRisk[l])) / nrow(CurData))
+                ExtRiskLwr[l] <- EvolExtRisk[l] - CI
+                ExtRiskUpr[l] <- EvolExtRisk[l] + CI
         }
-        Fig4Data[[i]] <- data.frame(L = Lseq, EvolExtRisk)
+        Fig4Data[[i]] <- data.frame(L = Lseq, EvolExtRisk, ExtRiskLwr, ExtRiskUpr)
 }
 names(Fig4Data) <- Scenarios
 
@@ -248,7 +287,9 @@ pdf(file = "ResultFigures/NoEvolRisk.pdf", width = 5, height = 3, onefile = FALS
         for(i in 1:5){
                 points(x = xLocs[i,], y = NoEvolExtRisk[i,], col = ScenCols[i], 
                       pch = 20 + i, bg = ScenCols[i])
+                
         }
+        
 dev.off()
 # There's very little variation among loci (as expected), so I will average across them
 #       In fact, I think this would be better demonstrated in a table since there's really
@@ -271,6 +312,8 @@ pdf(file = "ResultFigures/Figure4.pdf", width = 5, height = 3, onefile = FALSE, 
         # Graph the data
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig4Data[[i]]$EvolExtRisk, pch = 20+i, col = ScenCols[i], bg = ScenCols[i])
+                #segments(x0 = xLocs[i,], y0 = Fig4Data[[i]]$ExtRiskLwr, x1 = xLocs[i,], y1 = Fig4Data[[i]]$ExtRiskUpr,
+                #         lty = 1, col = ScenCols[i])
         }
         # Put the legend on the figure
         legend(x = -0.1, y = 0.3, legend = Scenarios[1:3], pch = 21:23, col = ScenCols[1:3], 
