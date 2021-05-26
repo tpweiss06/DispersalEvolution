@@ -112,7 +112,7 @@ rStudKern <- function(n, d){
 #    Kmax: The maximum achievable carrying capacity in the landscape
 #    Expand: A boolean variable indicating whether the current simulation is a
 #              strict range expansion or not
-#    omega: The probability of sefl-fertilization. Used to check for 0 population growth
+#    omega: The probability of self-fertilization. Used to check for 0 population growth
 #         if only 1 individual and obligatory outcrossing (omega == 0)
 #    PopMat, Haploid, PopIndices as previously defined
 ### OUTPUTS

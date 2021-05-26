@@ -2,12 +2,12 @@
 #    mark down those simulations that are complete and add the correct path to the
 #    file
 
-AllSimulations <- read.csv("/project/rangeecoevomodels/cweissle/DispEv/AllSimulations.csv")
+AllSimulations <- read.csv("/project/rangeecoevomodels/cweissle/DispEv/SensSimulations.csv")
 SimsToRemove <- NULL
 
 # Check for completeness of all simulations
 for(i in 1:nrow(AllSimulations)){
-     CurDirectory <- paste("/project/rangeecoevomodels/cweissle/DispEv/Sims", AllSimulations$SimID[i], sep = "/")
+     CurDirectory <- paste("/project/rangeecoevomodels/cweissle/DispEv/SensSims", AllSimulations$SimID[i], sep = "/")
      FinalFile <- paste(CurDirectory, "ShiftPopMat.csv", sep = "/")
      DirectoryCheck <- dir.exists(CurDirectory)
      CompleteCheck <- file.exists(FinalFile)
@@ -23,7 +23,7 @@ print(SimsToRemove)
 # How many simulations are complete?
 print(sum(AllSimulations$complete))
 
-write.csv(AllSimulations, file = "/project/rangeecoevomodels/cweissle/DispEv/AllSimulations.csv", 
+write.csv(AllSimulations, file = "/project/rangeecoevomodels/cweissle/DispEv/SensSimulations.csv", 
           row.names = FALSE, quote = FALSE)
 
 

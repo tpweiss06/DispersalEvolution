@@ -10,8 +10,8 @@
 #SBATCH --job-name=DispersalEvolution
 
 # Set names of R scripts and log files
-Rscript=RunSimulations.R
-LogFile=RunSimulations.log
+Rscript=RunSensitivitySims.R
+LogFile=RunSensitivitySims.log
 
 # Change to the relevant working directory
 cd /project/rangeecoevomodels/cweissle/DispEv/

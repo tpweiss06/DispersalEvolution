@@ -1,17 +1,17 @@
 #!/bin/bash -l
 
 #SBATCH --account=rangeecoevomodels
-#SBATCH --time=120:00:00
-#SBATCH --nodes=20
-#SBATCH --ntasks-per-node=32
+#SBATCH --time=00:30:00
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=cweissle@uwyo.edu
-#SBATCH --job-name=DispersalEvolution
+#SBATCH --job-name=GetSimInfo
 
-# Set names of R scripts and log files
-Rscript=RunSimulations.R
-LogFile=RunSimulations.log
+# Set the parameter combination to use and generate names of R scripts and log files
+Rscript=SensSimulationCheck.R
+LogFile=SensSimulationCheck.log
 
 # Change to the relevant working directory
 cd /project/rangeecoevomodels/cweissle/DispEv/
