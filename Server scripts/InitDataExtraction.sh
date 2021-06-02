@@ -2,7 +2,7 @@
 
 #SBATCH --account=rangeecoevomodels
 #SBATCH --time=02:30:00
-#SBATCH --nodes=2
+#SBATCH --nodes=4
 #SBATCH --ntasks-per-node=32
 #SBATCH --cpus-per-task=1
 #SBATCH --mail-type=ALL

@@ -1,4 +1,4 @@
-Init# This script will extract data from the simulations, which can then be used to
+# This script will extract data from the simulations, which can then be used to
 #    make the figures for the manuscripts. There are several quantities this script
 #    will focus on when extracting the data.
 # From the simulations of an unbounded expansion, this script will extract:
@@ -26,19 +26,12 @@ library(parallel)
 library(Rmpi)
 source("/project/rangeecoevomodels/cweissle/DispEv/SimFunctions.R")
 
-# Load in the AllSimulations.csv file and determine the patches to extract data
-#    from.
-source(paste("/project/rangeecoevomodels/cweissle/DispEv/Sims", AllSims$SimID[1], "parameters.R", sep = "/"))
-xSeq <- -100:100
-Kvals <- log(R) / PatchAlphas(OccPatches = xSeq, NumPatches = length(xSeq), CurBeta = BetaInit,
-                              tau = tau, gamma = gamma, Kmax = Kmax, R = R)
-InitPatches <- xSeq[which(Kvals >= 10)]
-
 # Load in the matrix with all the simulation information and add columns to hold
 #    the needed data
 AllSims <- read.csv("AllSimulations.csv")
-Phen <- matrix(NA, nrow = nrow(AllSims), ncol = length(InitPatches))
-Gen <- matrix(NA, nrow = nrow(AllSims), ncol = length(InitPatches))
+MeanPhen <- rep(NA, nrow(AllSims))
+GenVar <- rep(NA, nrow(AllSims))
+AllSims <- cbind(AllSims, MeanPhen, GenVar)
 
 # Create the function to be run on the cluster
 SimFunc <- function(i){
@@ -51,25 +44,19 @@ SimFunc <- function(i){
      source(paste(CurSim, "parameters.R", sep = "/"))
      PopIndices <- PopMatColNames(L = L, monoecious = monoecious, Haploid = Haploid)
      
-     # Next calculate the mean dispersal phenotype and genetic variance of each
-     #    sufficiently occupied patch (carrying capacity >= 10) of the initial
-     #    population
-     Phens <- rep(NA, length(InitPatches))
-     GenVars <- rep(NA, length(InitPatches))
-     for(x in 1:length(InitPatches)){
-          CurPop <- which(InitialPopMat$x0 == InitPatches[x])
-          # Phenotype
-          CurPhens <- DispPhen(PopMat = InitialPopMat[CurPop,], PopSize = length(CurPop), 
-                                    PopIndices = PopIndices, Haploid = Haploid, L = L, dmax = dmax, 
-                                    rho = rho, lambda = lambda)
-          Phens[x] <- mean(CurPhens, na.rm = TRUE)
-          # Genetic variance
-          CurGenVarMat <- var(InitialPopMat[CurPop,PopIndices$DispCols])
-          GenVars[x] <- sum(CurGenVarMat[lower.tri(InitGenVarMat, diag = TRUE)])
-     }
+     # Next calculate the mean dispersal phenotype and genetic variance across 
+     #  the whole initial population
+     # Phenotype
+     Phens <- DispPhen(PopMat = InitialPopMat, PopSize = nrow(InitialPopMat), 
+                          PopIndices = PopIndices, Haploid = Haploid, L = L, dmax = dmax, 
+                          rho = rho, lambda = lambda)
+     MeanPhen <- mean(Phens)
+     # Genetic variance
+     GenVarMat <- var(InitialPopMat[,PopIndices$DispCols])
+     GenVar <- sum(GenVarMat[lower.tri(GenVarMat, diag = TRUE)])
      
      # Now return a list of each of these and sort them out after the cluster call, saving the final matrix
-     Results <- list(Phens = Phens, GenVars = GenVars)
+     Results <- list(Phen = MeanPhen, GenVar = GenVar)
      return(Results)
 }
 
@@ -80,7 +67,7 @@ SimVec <- 1:nrow(AllSims)
 cl <- makeCluster(TotalTasks - 1, type = "MPI")
 
 # Export the necessary objects to each node
-clusterExport(cl, c("AllSims", "InitPatches"))
+clusterExport(cl, "AllSims")
 
 # Change the working directory of the worker nodes
 temp <- clusterEvalQ(cl, source("/project/rangeecoevomodels/cweissle/DispEv/SimFunctions.R") )
@@ -88,47 +75,11 @@ temp <- clusterEvalQ(cl, source("/project/rangeecoevomodels/cweissle/DispEv/SimF
 # Run the simulations
 Sims <- clusterApply(cl, x = SimVec, fun = SimFunc)
 
-# Now process the Sims and save the updated matrices
+# Now process the Sims and save the updated matrix
 for(i in 1:nrow(AllSims)){
-     Phen[i,] <- Sims[[i]]$Phens
-     Gen[i,] <- Sims[[i]]$GenVars
+        AllSims$MeanPhen[i] <- Sims[[i]]$Phen
+        AllSims$GenVar[i] <- Sims[[i]]$GenVar
 }
-
-# Create two arrays to store the mean values for each simulation
-MeanPhenVals <- array(NA, dim = c(6, 5, length(InitPatches)))
-MeanGenVals <- array(NA, dim = c(6, 5, length(InitPatches)))
-VarPhenVals <- array(NA, dim = c(6, 5, length(InitPatches)))
-VarGenVals <- array(NA, dim = c(6, 5, length(InitPatches)))
-
-# First dimension is loci number: 1,2,4,8,16,32
-# Second dimension is population type: Asexual, sexual dioecious, obligatory outcrossing, partial selfing, obligatory selfing
-
-Lseq <- c(1, 2, 4, 8, 16, 32)
-# NOTE: Haploid is always associated with a monoecious value of TRUE even though
-#    it has no meaning for haploid organisms.
-Haploid <- c(TRUE, FALSE, FALSE, FALSE, FALSE)
-monoecious <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
-omega <- c(0, 0, 0, 0.5, 1)
-
-for(l in 1:length(Lseq)){
-     for(i in 1:length(Haploid)){
-          CurSims <- AllSims$SimID[which(AllSims$L == Lseq[l] & AllSims$Haploid == Haploid[i] & AllSims$monoecious == monoecious[i] &
-                                           AllSims$omega == omega[i])]
-          CurPhens <- matrix(data = NA, nrow = length(CurSims), ncol = length(InitPatches))
-          CurGen <- matrix(data = NA, nrow = length(CurSims), ncol = length(InitPatches))
-          for(j in 1:length(CurSims)){
-               CurPhens[j,] <- Phen[CurSims[j],]
-               CurGen[j,] <- Gen[CurSims[j],]
-          }
-          MeanPhenVals[l,i,] <- colMeans(CurPhens, na.rm = TRUE)
-          MeanGenVals[l,i,] <- colMeans(CurGen, na.rm = TRUE)
-          for(j in 1:length(InitPatches)){
-               VarPhenVals[l,i,j] <- var(CurPhens[,j], na.rm = TRUE)
-               VarGenVals[l,i,j] <- var(CurGen[,j], na.rm = TRUE)
-          }
-     }
-}
-
-save(MeanPhenVals, MeanGenVals, VarPhenVals, VarGenVals, 
-     file = "/project/rangeecoevomodels/cweissle/DispEv/InitialConditions.rdata")
+write.csv(AllSims, file = "/project/rangeecoevomodels/cweissle/DispEv/SimsWithInitVals.csv", 
+          row.names = FALSE, quote = FALSE)
 
