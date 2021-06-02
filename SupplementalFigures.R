@@ -49,15 +49,14 @@ for(i in 1:5){
                                     LwrGen, UprGen)
 }
 
-
 pdf(file = "ResultFigures/FigureS1.pdf", width = 5, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
         par(mfrow = c(2,1), oma = c(3,3,1,1), mar = c(1.5,1,1.5,1), family = "serif")
 
         # Make the phenotype figure
-        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(0, 2), main = "", ylab = "", 
+        plot(NA, NA, xlim = c(-0.05, 1.05), ylim = c(1.2, 1.9), main = "", ylab = "", 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
-        #axis(side = 2, at = seq(0, 1.4, by = 0.05), tcl = -0.25, labels = FALSE)
+        axis(side = 2, at = seq(1.2, 1.9, by = 0.025), tcl = -0.25, labels = FALSE)
         mtext("Initial dispersal phenotype", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = FigS1Data[[i]]$MeanPhen, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
@@ -67,13 +66,14 @@ pdf(file = "ResultFigures/FigureS1.pdf", width = 5, height = 6, onefile = FALSE,
         mtext("a", side = 3, line = 0, adj = 0, font = 2, cex = 1.25)
 
         # Put the legend on the figure
-        legend("topleft", legend = Scenarios, pch = 21:25, col = ScenCols, bty = "n", pt.bg = ScenCols, inset = -0.01)
+        legend("top", legend = Scenarios, pch = 21:25, col = ScenCols, bty = "n", 
+               pt.bg = ScenCols, inset = -0.01, ncol = 2)
         
         # Make the genetic diversity figure
-        plot(NA, NA, xlim = c(-0.05,1.05), ylim = c(0, 3), main = "", ylab = "", 
+        plot(NA, NA, xlim = c(-0.05,1.05), ylim = c(0.5, 3.5), main = "", ylab = "", 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
-        #axis(side = 2, at = seq(-3, 0, by = 0.1), tcl = -0.25, labels = FALSE)
+        axis(side = 2, at = seq(0.5, 3.5, by = 0.125), tcl = -0.25, labels = FALSE)
         mtext("Initial genetic diversity", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = FigS1Data[[i]]$MeanGen, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
@@ -84,141 +84,11 @@ pdf(file = "ResultFigures/FigureS1.pdf", width = 5, height = 6, onefile = FALSE,
         mtext("b", side = 3, line = 0, adj = 0, font = 2, cex = 1.25)
 dev.off()
 
-
-
-
-xlab <- "Space"
-ylab1 <- "Mean phenotype"
-ylab2 <- "Mean genetic variance"
-PhenRange <- range(MeanPhenVals, na.rm = TRUE)
-GenRange <- range(MeanGenVals, na.rm = TRUE)
-xSeq <- -59:59
-xRange <- c(-60,60)
-#Legend_xCoords <- c(-250, -200, -125, -60, 30) - 40
-Legend_xCoords <- c(-290, -240, -165, -100, -10)
-
-pdf(file = "ResultFigures/FigureS1.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
-     par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
-     for(l in 1:6){
-          plot(x = NA, y = NA, xlim = xRange, ylim = PhenRange, main = "", xlab = "",
-               ylab = ylab1, las = 1)
-          for(p in 1:5){
-               lines(x = xSeq, y = MeanPhenVals[l,p,], col = ScenCols[p])
-          }
-          plot(x = NA, y = NA, xlim = xRange, ylim = GenRange, main = "", xlab = "",
-               ylab = ylab2, las = 1)
-          for(p in 1:5){
-               lines(x = xSeq, y = MeanGenVals[l,p,], col = ScenCols[p])
-          }
-          if(l == 1){
-                  for(i in 1:5){
-                          legend(x = Legend_xCoords[i], y = 1.15*GenRange[2], horiz = TRUE, bty = "n", 
-                                 legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
-                  }
-          }
-     }
-     mtext(xlab, side = 1, line = 1, outer = TRUE)
-dev.off()
-
-
-# This figure for variance among simulations might not make it into the supplemental
-#    material and instead I might just include a description or some values in the 
-#    caption for Figure S1.
-ylab1 <- "Phenotype"
-ylab2 <- "Genetic variance"
-PhenRange <- range(VarPhenVals, na.rm = TRUE)
-GenRange <- range(VarGenVals, na.rm = TRUE)
-pdf(file = "ResultFigures/FigureS2.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
-     par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
-     for(l in 1:6){
-          plot(x = NA, y = NA, xlim = xRange, ylim = PhenRange, main = "", xlab = "",
-               ylab = "", las = 1)
-          mtext(ylab1, side = 2, line = 3.5, cex = 0.75)
-          for(p in 1:5){
-               lines(x = xSeq, y = VarPhenVals[l,p,], col = ScenCols[p])
-          }
-          plot(x = NA, y = NA, xlim = xRange, ylim = GenRange, main = "", xlab = "",
-               ylab = ylab2, las = 1)
-          for(p in 1:5){
-               lines(x = xSeq, y = VarGenVals[l,p,], col = ScenCols[p])
-          }
-          if(l == 1){
-                  for(i in 1:5){
-                          legend(x = Legend_xCoords[i], y = 1.2*GenRange[2], horiz = TRUE, bty = "n", 
-                                 legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
-                  }
-          }
-     }
-     mtext(xlab, side = 1, line = 1, outer = TRUE)
-dev.off()
-
-
-# New trial figure
-PhenSD <- sqrt(VarPhenVals)
-MeanRange <- range(MeanPhenVals, na.rm = TRUE)
-SDRange <- range(PhenSD, na.rm = TRUE)
-ylab1 <- "Mean"
-ylab2 <- "Standard deviation"
-pdf(file = "ResultFigures/FigureS1_Trial.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
-        for(l in 1:6){
-                plot(x = NA, y = NA, xlim = xRange, ylim = MeanRange, main = "", xlab = "",
-                     ylab = ylab1, las = 1)
-                for(p in 1:5){
-                        lines(x = xSeq, y = MeanPhenVals[l,p,], col = ScenCols[p])
-                }
-                mtext(paste("L = ", Lseq[l], sep = ""), side = 2, line = 4.5)
-                plot(x = NA, y = NA, xlim = xRange, ylim = SDRange, main = "", xlab = "",
-                     ylab = ylab2, las = 1)
-                for(p in 1:5){
-                        lines(x = xSeq, y = PhenSD[l,p,], col = ScenCols[p])
-                }
-                if(l == 1){
-                        for(i in 1:5){
-                                legend(x = Legend_xCoords[i], y = 1.1*SDRange[2], horiz = TRUE, bty = "n", 
-                                       legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
-                        }
-                }
-        }
-        mtext(xlab, side = 1, line = 1, outer = TRUE)
-dev.off()
-
-# Second trial figure
-GenSD <- sqrt(VarGenVals)
-MeanRange <- range(MeanGenVals, na.rm = TRUE)
-SDRange <- range(GenSD, na.rm = TRUE)
-ylab1 <- "Mean"
-ylab2 <- "Standard deviation"
-pdf(file = "ResultFigures/FigureS2_Trial.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
-        par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
-        for(l in 1:6){
-                plot(x = NA, y = NA, xlim = xRange, ylim = MeanRange, main = "", xlab = "",
-                     ylab = ylab1, las = 1)
-                for(p in 1:5){
-                        lines(x = xSeq, y = MeanGenVals[l,p,], col = ScenCols[p])
-                }
-                mtext(paste("L = ", Lseq[l], sep = ""), side = 2, line = 4.5)
-                plot(x = NA, y = NA, xlim = xRange, ylim = SDRange, main = "", xlab = "",
-                     ylab = ylab2, las = 1)
-                for(p in 1:5){
-                        lines(x = xSeq, y = GenSD[l,p,], col = ScenCols[p])
-                }
-                if(l == 1){
-                        for(i in 1:5){
-                                legend(x = Legend_xCoords[i], y = 1.2*SDRange[2], horiz = TRUE, bty = "n", 
-                                       legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
-                        }
-                }
-        }
-        mtext(xlab, side = 1, line = 1, outer = TRUE)
-dev.off()
-
-
-############### Fig. S3-S6; Sensitivity analysis of mutation parameters
-# Fig. S3 and S4 will pertain to the changes during unbounded range expansions
-# Fig. S5 and S6 will pertain to the changes during range shifts
-# Fig. S3 and S5 will show the mean change for each parameter combination
-# Fig. S4 and S6 will show the IQR width for changes under each parameter combination
+############### Fig. S2-S5; Sensitivity analysis of mutation parameters
+# Fig. S2 and S3 will pertain to the changes during unbounded range expansions
+# Fig. S4 and S5 will pertain to the changes during range shifts
+# Fig. S2 and S4 will show the mean change for each parameter combination
+# Fig. S3 and S5 will show the IQR width for changes under each parameter combination
 
 # Before any graphing, the following loop will extract all the necessary data
 Results <- read.csv("SensSimsWithResults.csv")
@@ -240,19 +110,19 @@ for(i in 1:5){
                         DeltaPhenExp <- c(CurData$DeltaPhenExp_1, CurData$DeltaPhenExp_2)
                         DeltaGenExp <- c(CurData$DeltaGenExp_1, CurData$DeltaGenExp_2)
                         Dists <- c(CurData$distance_1, CurData$distance_2)
-                        # Figure S3; mean values for unbounded expansions
+                        # Figure S2; mean values for unbounded expansions
                         SuppFigData[1,i,1,j,k] <- mean(DeltaPhenExp)
                         SuppFigData[1,i,2,j,k] <- mean(DeltaGenExp)
                         SuppFigData[1,i,3,j,k] <- mean(Dists)
-                        # Figure S4; IQR widths for unbounded expansions
+                        # Figure S3; IQR widths for unbounded expansions
                         SuppFigData[2,i,1,j,k] <- quantile(DeltaPhenExp, probs = 0.75) - quantile(DeltaPhenExp, probs = 0.25)
                         SuppFigData[2,i,2,j,k] <- quantile(DeltaGenExp, probs = 0.75) - quantile(DeltaGenExp, probs = 0.25)
                         SuppFigData[2,i,3,j,k] <- quantile(Dists, probs = 0.75) - quantile(Dists, probs = 0.25)
-                        # Figure S5; mean values for range shifts
+                        # Figure S4; mean values for range shifts
                         SuppFigData[3,i,1,j,k] <- mean(CurData$DeltaPhenShift)
                         SuppFigData[3,i,2,j,k] <- mean(CurData$DeltaGenShift)
                         SuppFigData[3,i,3,j,k] <- mean(CurData$ExtRisk)
-                        # Figure S6; IQR widths for range shifts
+                        # Figure S5; IQR widths for range shifts
                         SuppFigData[4,i,1,j,k] <- quantile(CurData$DeltaPhenShift, probs = 0.75) - quantile(CurData$DeltaPhenShift, probs = 0.25)
                         SuppFigData[4,i,2,j,k] <- quantile(CurData$DeltaGenShift, probs = 0.75) - quantile(CurData$DeltaGenShift, probs = 0.25)
                 }
