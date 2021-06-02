@@ -55,15 +55,16 @@ dev.off()
 # This figure for variance among simulations might not make it into the supplemental
 #    material and instead I might just include a description or some values in the 
 #    caption for Figure S1.
-ylab1 <- "Variance in phenotype"
-ylab2 <- "Variance in genetic variance"
-PhenRange <- range(VarPhenVals)
-GenRange <- range(VarGenVals)
-pdf(file = "ResultFigures/FigureS2.pdf", width = 4, height = 8, onefile = FALSE, paper = "special", useDingbats = FALSE)
-     par(mfrow = c(6,2), oma = c(2,0,0,0), mar = c(5, 4, 4, 2) + 0.1)
+ylab1 <- "Phenotype"
+ylab2 <- "Genetic variance"
+PhenRange <- range(VarPhenVals, na.rm = TRUE)
+GenRange <- range(VarGenVals, na.rm = TRUE)
+pdf(file = "ResultFigures/FigureS2.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
+     par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
      for(l in 1:6){
           plot(x = NA, y = NA, xlim = xRange, ylim = PhenRange, main = "", xlab = "",
-               ylab = ylab1, las = 1)
+               ylab = "", las = 1)
+          mtext(ylab1, side = 2, line = 3.5, cex = 0.75)
           for(p in 1:5){
                lines(x = xSeq, y = VarPhenVals[l,p,], col = ScenCols[p])
           }
@@ -73,9 +74,10 @@ pdf(file = "ResultFigures/FigureS2.pdf", width = 4, height = 8, onefile = FALSE,
                lines(x = xSeq, y = VarGenVals[l,p,], col = ScenCols[p])
           }
           if(l == 1){
-               legend(x = -100, y = 1.25*GenRange[2], horiz = TRUE, bty = "n", 
-                      legend = Scenarios, lty = 1, 
-                      col = ScenCols, xpd = NA)
+                  for(i in 1:5){
+                          legend(x = Legend_xCoords[i], y = 1.2*GenRange[2], horiz = TRUE, bty = "n", 
+                                 legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
+                  }
           }
      }
      mtext(xlab, side = 1, line = 1, outer = TRUE)
