@@ -62,7 +62,7 @@ SimFunc <- function(i){
           CurPhens <- DispPhen(PopMat = InitialPopMat[CurPop,], PopSize = length(CurPop), 
                                     PopIndices = PopIndices, Haploid = Haploid, L = L, dmax = dmax, 
                                     rho = rho, lambda = lambda)
-          Phens[x] <- mean(CurPhens)
+          Phens[x] <- mean(CurPhens, na.rm = TRUE)
           # Genetic variance
           CurGenVarMat <- var(InitialPopMat[CurPop,PopIndices$DispCols])
           GenVars[x] <- sum(CurGenVarMat[lower.tri(InitGenVarMat, diag = TRUE)])
@@ -112,18 +112,19 @@ omega <- c(0, 0, 0, 0.5, 1)
 
 for(l in 1:length(Lseq)){
      for(i in 1:length(Haploid)){
-          CurSims <- subset(AllSims, L == Lseq[l] & Haploid == Haploid[i] & monoecious == monoecious[i] & omega == omega[i])$SimID
+          CurSims <- AllSims$SimID[which(AllSims$L == Lseq[l] & AllSims$Haploid == Haploid[i] & AllSims$monoecious == monoecious[i] &
+                                           AllSims$omega == omega[i])]
           CurPhens <- matrix(data = NA, nrow = length(CurSims), ncol = length(InitPatches))
           CurGen <- matrix(data = NA, nrow = length(CurSims), ncol = length(InitPatches))
           for(j in 1:length(CurSims)){
                CurPhens[j,] <- Phen[CurSims[j],]
                CurGen[j,] <- Gen[CurSims[j],]
           }
-          MeanPhenVals[l,i,] <- colMeans(CurPhens)
-          MeanGenVals[l,i,] <- colMeans(CurGen)
+          MeanPhenVals[l,i,] <- colMeans(CurPhens, na.rm = TRUE)
+          MeanGenVals[l,i,] <- colMeans(CurGen, na.rm = TRUE)
           for(j in 1:length(InitPatches)){
-               VarPhenVals[l,i,j] <- var(CurPhens[,j])
-               VarGenVals[l,i,j] <- var(CurGen[,j])
+               VarPhenVals[l,i,j] <- var(CurPhens[,j], na.rm = TRUE)
+               VarGenVals[l,i,j] <- var(CurGen[,j], na.rm = TRUE)
           }
      }
 }

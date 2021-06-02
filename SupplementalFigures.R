@@ -1,7 +1,7 @@
 # This script will make the necessary figures for the supplementary material
 #    for the manuscript.
 
-setwd("~/Desktop/Wyoming/DispersalEvolution/GitRepo/")
+setwd("~/Desktop/GitHubRepos/DispersalEvolution/")
 
 # Set up the same colors and labels as the main manuscript figures
 library(RColorBrewer)
@@ -21,13 +21,15 @@ load("InitialConditions.rdata")
 xlab <- "Space"
 ylab1 <- "Mean phenotype"
 ylab2 <- "Mean genetic variance"
-PhenRange <- range(MeanPhenVals)
-GenRange <- range(MeanGenVals)
+PhenRange <- range(MeanPhenVals, na.rm = TRUE)
+GenRange <- range(MeanGenVals, na.rm = TRUE)
 xSeq <- -59:59
 xRange <- c(-60,60)
+#Legend_xCoords <- c(-250, -200, -125, -60, 30) - 40
+Legend_xCoords <- c(-290, -240, -165, -100, -10)
 
-pdf(file = "ResultFigures/FigureS1.pdf", width = 4, height = 8, onefile = FALSE, paper = "special", useDingbats = FALSE)
-     par(mfrow = c(6,2), oma = c(2,0,0,0), mar = c(5, 4, 4, 2) + 0.1)
+pdf(file = "ResultFigures/FigureS1.pdf", width = 6, height = 9, onefile = FALSE, paper = "special", useDingbats = FALSE)
+     par(mfrow = c(6,2), oma = c(3,3,3,0), mar = c(1.5, 4, 1.25, 1.5))
      for(l in 1:6){
           plot(x = NA, y = NA, xlim = xRange, ylim = PhenRange, main = "", xlab = "",
                ylab = ylab1, las = 1)
@@ -40,9 +42,10 @@ pdf(file = "ResultFigures/FigureS1.pdf", width = 4, height = 8, onefile = FALSE,
                lines(x = xSeq, y = MeanGenVals[l,p,], col = ScenCols[p])
           }
           if(l == 1){
-               legend(x = -100, y = 1.25*GenRange[2], horiz = TRUE, bty = "n", 
-                      legend = Scenarios, lty = 1, 
-                      col = ScenCols, xpd = NA)
+                  for(i in 1:5){
+                          legend(x = Legend_xCoords[i], y = 1.15*GenRange[2], horiz = TRUE, bty = "n", 
+                                 legend = Scenarios[i], lty = 1, col = ScenCols[i], xpd = NA)
+                  }
           }
      }
      mtext(xlab, side = 1, line = 1, outer = TRUE)
