@@ -111,20 +111,20 @@ for(i in 1:5){
                         DeltaGenExp <- c(CurData$DeltaGenExp_1, CurData$DeltaGenExp_2)
                         Dists <- c(CurData$distance_1, CurData$distance_2)
                         # Figure S2; mean values for unbounded expansions
-                        SuppFigData[1,i,1,j,k] <- mean(DeltaPhenExp)
-                        SuppFigData[1,i,2,j,k] <- mean(DeltaGenExp)
-                        SuppFigData[1,i,3,j,k] <- mean(Dists)
+                        SensFigData[1,i,1,j,k] <- mean(DeltaPhenExp)
+                        SensFigData[1,i,2,j,k] <- mean(DeltaGenExp)
+                        SensFigData[1,i,3,j,k] <- mean(Dists)
                         # Figure S3; IQR widths for unbounded expansions
-                        SuppFigData[2,i,1,j,k] <- quantile(DeltaPhenExp, probs = 0.75) - quantile(DeltaPhenExp, probs = 0.25)
-                        SuppFigData[2,i,2,j,k] <- quantile(DeltaGenExp, probs = 0.75) - quantile(DeltaGenExp, probs = 0.25)
-                        SuppFigData[2,i,3,j,k] <- quantile(Dists, probs = 0.75) - quantile(Dists, probs = 0.25)
+                        SensFigData[2,i,1,j,k] <- quantile(DeltaPhenExp, probs = 0.75, na.rm = TRUE) - quantile(DeltaPhenExp, probs = 0.25, na.rm = TRUE)
+                        SensFigData[2,i,2,j,k] <- quantile(DeltaGenExp, probs = 0.75, na.rm = TRUE) - quantile(DeltaGenExp, probs = 0.25, na.rm = TRUE)
+                        SensFigData[2,i,3,j,k] <- quantile(Dists, probs = 0.75, na.rm = TRUE) - quantile(Dists, probs = 0.25, na.rm = TRUE)
                         # Figure S4; mean values for range shifts
-                        SuppFigData[3,i,1,j,k] <- mean(CurData$DeltaPhenShift)
-                        SuppFigData[3,i,2,j,k] <- mean(CurData$DeltaGenShift)
-                        SuppFigData[3,i,3,j,k] <- mean(CurData$ExtRisk)
+                        SensFigData[3,i,1,j,k] <- mean(CurData$DeltaPhenShift)
+                        SensFigData[3,i,2,j,k] <- mean(CurData$DeltaGenShift)
+                        SensFigData[3,i,3,j,k] <- mean(CurData$ExtRisk)
                         # Figure S5; IQR widths for range shifts
-                        SuppFigData[4,i,1,j,k] <- quantile(CurData$DeltaPhenShift, probs = 0.75) - quantile(CurData$DeltaPhenShift, probs = 0.25)
-                        SuppFigData[4,i,2,j,k] <- quantile(CurData$DeltaGenShift, probs = 0.75) - quantile(CurData$DeltaGenShift, probs = 0.25)
+                        SensFigData[4,i,1,j,k] <- quantile(CurData$DeltaPhenShift, probs = 0.75, na.rm = TRUE) - quantile(CurData$DeltaPhenShift, probs = 0.25, na.rm = TRUE)
+                        SensFigData[4,i,2,j,k] <- quantile(CurData$DeltaGenShift, probs = 0.75, na.rm = TRUE) - quantile(CurData$DeltaGenShift, probs = 0.25, na.rm = TRUE)
                 }
         }
 }
