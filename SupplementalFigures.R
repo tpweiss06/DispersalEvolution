@@ -119,8 +119,8 @@ for(i in 1:5){
                         SensFigData[2,i,2,j,k] <- quantile(DeltaGenExp, probs = 0.75, na.rm = TRUE) - quantile(DeltaGenExp, probs = 0.25, na.rm = TRUE)
                         SensFigData[2,i,3,j,k] <- quantile(Dists, probs = 0.75, na.rm = TRUE) - quantile(Dists, probs = 0.25, na.rm = TRUE)
                         # Figure S4; mean values for range shifts
-                        SensFigData[3,i,1,j,k] <- mean(CurData$DeltaPhenShift)
-                        SensFigData[3,i,2,j,k] <- mean(CurData$DeltaGenShift)
+                        SensFigData[3,i,1,j,k] <- mean(CurData$DeltaPhenShift, na.rm = TRUE)
+                        SensFigData[3,i,2,j,k] <- mean(CurData$DeltaGenShift, na.rm = TRUE)
                         SensFigData[3,i,3,j,k] <- mean(CurData$ExtRisk)
                         # Figure S5; IQR widths for range shifts
                         SensFigData[4,i,1,j,k] <- quantile(CurData$DeltaPhenShift, probs = 0.75, na.rm = TRUE) - quantile(CurData$DeltaPhenShift, probs = 0.25, na.rm = TRUE)
@@ -129,5 +129,181 @@ for(i in 1:5){
         }
 }
 
-# columns are y-axis, rows are x-axis
+####### For the supplemental figures using heat maps (all sensitivity analysis figures),
+#       create a function to identify the appropriate colors to use for a single graph
+#       from a larger selection that correspond to the full range of possible values.
+FindRange <- function(minimum, maximum, sequence){
+        if(class(sequence) != 'numeric'){
+                sequence <- as.numeric(sequence)
+        }
+        LessThan <- ifelse(sequence <= minimum, 1, 0)
+        MoreThan <- ifelse(sequence >= maximum, 1, 0)
+        MinIndex <- sum(LessThan)
+        MaxIndex <- length(sequence) - sum(MoreThan)
+        return(MinIndex:MaxIndex)
+}
+
+# Create a matrix to use with the layout command for Figures S2-S4
+PlotArray <- matrix(c(rep(1,4), rep(2,4), rep(3,4), rep(4,4), rep(5,4), 6, rep(7, 4), rep(8, 4), rep(9, 4), rep(10, 4), rep(11, 4), 12, rep(13, 4), rep(14, 4), rep(15, 4), rep(16, 4), rep(17, 4), 18), 
+                    nrow=3, ncol=21, byrow=TRUE)
+############################ Fig. S2; Mean changes in unbounded range expansions
+# Define the ranges for each row of the plot and appropriate color values
+ColRanges <- matrix(data = NA, nrow = 3, ncol = 2)
+ColVals <- array(data = NA, dim = c(3,2,1000))
+for(i in 1:3){
+        ColRanges[i,] <- range(SensFigData[1,,i,,], na.rm = TRUE)
+        ColVals[i,1,] <- seq(ColRanges[i,1], ColRanges[i,2], length.out=1000)
+        ColVals[i,2,] <- jet.col(n = 1000)
+}
+RowLabels <- c("Phenotype", "Genetic Variance", "Distance")
+pdf(file = "ResultFigures/FigureS2.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(oma = c(3,4,1,2), mar = c(1.5,1.5,1.5,1.5), family = "serif")
+        layout(PlotArray)
+        for(r in 1:3){
+                for(i in 1:5){
+                        CurRange <- FindRange(minimum = min(SensFigData[1,i,r,,], na.rm = TRUE), 
+                                              maximum = max(SensFigData[1,i,r,,], na.rm = TRUE),
+                                              sequence = ColVals[r,1,])
+                        image2D(z = SensFigData[1,i,r,,], x = 1:length(Uvals), 
+                                y = 1:length(sigVals), resfac = 1, colkey=FALSE,
+                                col = ColVals[r,2,CurRange], xlab = "", ylab = "",
+                                axes = FALSE)
+                        box()
+                        axis(1, labels = Uvals, at = 1:7, las=1)
+                        axis(2, labels = round(sigVals, digits = 2), at = 1:7, las=1)
+                        if(r == 1){
+                                mtext(Scenarios[i], side = 3, line = 0.5)
+                        }
+                        if(i == 1){
+                                mtext(RowLabels[r], side = 2, line = 4)
+                        }
+                }
+                # Add the color key
+                colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
+        }
+        mtext("U", side = 1, line = 1.5, outer = TRUE)
+        mtext(expression(sigma), side = 2, line = 1.25, outer = TRUE)
+dev.off()
+
+############################ Fig. S3; IQR widths in unbounded range expansions
+# Define the ranges for each row of the plot and appropriate color values
+ColRanges <- matrix(data = NA, nrow = 3, ncol = 2)
+ColVals <- array(data = NA, dim = c(3,2,1000))
+for(i in 1:3){
+        ColRanges[i,] <- range(SensFigData[2,,i,,], na.rm = TRUE)
+        ColVals[i,1,] <- seq(ColRanges[i,1], ColRanges[i,2], length.out=1000)
+        ColVals[i,2,] <- jet.col(n = 1000)
+}
+RowLabels <- c("Phenotype", "Genetic Variance", "Distance")
+pdf(file = "ResultFigures/FigureS3.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(oma = c(3,4,1,2), mar = c(1.5,1.5,1.5,1.5), family = "serif")
+        layout(PlotArray)
+        for(r in 1:3){
+                for(i in 1:5){
+                        CurRange <- FindRange(minimum = min(SensFigData[2,i,r,,], na.rm = TRUE), 
+                                              maximum = max(SensFigData[2,i,r,,], na.rm = TRUE),
+                                              sequence = ColVals[r,1,])
+                        image2D(z = SensFigData[2,i,r,,], x = 1:length(Uvals), 
+                                y = 1:length(sigVals), resfac = 1, colkey=FALSE,
+                                col = ColVals[r,2,CurRange], xlab = "", ylab = "",
+                                axes = FALSE)
+                        box()
+                        axis(1, labels = Uvals, at = 1:7, las=1)
+                        axis(2, labels = round(sigVals, digits = 2), at = 1:7, las=1)
+                        if(r == 1){
+                                mtext(Scenarios[i], side = 3, line = 0.5)
+                        }
+                        if(i == 1){
+                                mtext(RowLabels[r], side = 2, line = 4)
+                        }
+                }
+                # Add the color key
+                colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
+        }
+        mtext("U", side = 1, line = 1.5, outer = TRUE)
+        mtext(expression(sigma), side = 2, line = 1.25, outer = TRUE)
+dev.off()
+
+########################################## Fig. S4; Mean changes in range shifts
+# Define the ranges for each row of the plot and appropriate color values
+ColRanges <- matrix(data = NA, nrow = 3, ncol = 2)
+ColVals <- array(data = NA, dim = c(3,2,1000))
+for(i in 1:3){
+        ColRanges[i,] <- range(SensFigData[3,,i,,], na.rm = TRUE)
+        ColVals[i,1,] <- seq(ColRanges[i,1], ColRanges[i,2], length.out=1000)
+        ColVals[i,2,] <- jet.col(n = 1000)
+}
+RowLabels <- c("Phenotype", "Genetic Variance", "Extinction risk")
+pdf(file = "ResultFigures/FigureS4.pdf", width = 10, height = 6, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(oma = c(3,4,1,2), mar = c(1.5,1.5,1.5,1.5), family = "serif")
+        layout(PlotArray)
+        for(r in 1:3){
+                for(i in 1:5){
+                        CurRange <- FindRange(minimum = min(SensFigData[3,i,r,,], na.rm = TRUE), 
+                                              maximum = max(SensFigData[3,i,r,,], na.rm = TRUE),
+                                              sequence = ColVals[r,1,])
+                        image2D(z = SensFigData[3,i,r,,], x = 1:length(Uvals), 
+                                y = 1:length(sigVals), resfac = 1, colkey=FALSE,
+                                col = ColVals[r,2,CurRange], xlab = "", ylab = "",
+                                axes = FALSE)
+                        box()
+                        axis(1, labels = Uvals, at = 1:7, las=1)
+                        axis(2, labels = round(sigVals, digits = 2), at = 1:7, las=1)
+                        if(r == 1){
+                                mtext(Scenarios[i], side = 3, line = 0.5)
+                        }
+                        if(i == 1){
+                                mtext(RowLabels[r], side = 2, line = 4)
+                        }
+                }
+                # Add the color key
+                colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
+        }
+        mtext("U", side = 1, line = 1.5, outer = TRUE)
+        mtext(expression(sigma), side = 2, line = 1.25, outer = TRUE)
+dev.off()
+
+########################################## Fig. S5; IQR widths in range shifts
+# This figure only has 2 rows since the proportion of scenarios to go extinct 
+#       doesn't have an associated IQR
+# Create a new matrix to use with the layout command for Figures S5
+PlotArray <- matrix(c(rep(1,4), rep(2,4), rep(3,4), rep(4,4), rep(5,4), 6, rep(7, 4), rep(8, 4), rep(9, 4), rep(10, 4), rep(11, 4), 12), 
+                    nrow=2, ncol=21, byrow=TRUE)
+# Define the ranges for each row of the plot and appropriate color values
+ColRanges <- matrix(data = NA, nrow = 2, ncol = 2)
+ColVals <- array(data = NA, dim = c(2,2,1000))
+for(i in 1:2){
+        ColRanges[i,] <- range(SensFigData[4,,i,,], na.rm = TRUE)
+        ColVals[i,1,] <- seq(ColRanges[i,1], ColRanges[i,2], length.out=1000)
+        ColVals[i,2,] <- jet.col(n = 1000)
+}
+RowLabels <- c("Phenotype", "Genetic Variance")
+pdf(file = "ResultFigures/FigureS5.pdf", width = 10, height = 4, onefile = FALSE, paper = "special", useDingbats = FALSE)
+        par(oma = c(3,4,1,2), mar = c(1.5,1.5,1.5,1.5), family = "serif")
+                layout(PlotArray)
+                for(r in 1:2){
+                        for(i in 1:5){
+                                CurRange <- FindRange(minimum = min(SensFigData[4,i,r,,], na.rm = TRUE), 
+                                                      maximum = max(SensFigData[4,i,r,,], na.rm = TRUE),
+                                                      sequence = ColVals[r,1,])
+                                image2D(z = SensFigData[4,i,r,,], x = 1:length(Uvals), 
+                                        y = 1:length(sigVals), resfac = 1, colkey=FALSE,
+                                        col = ColVals[r,2,CurRange], xlab = "", ylab = "",
+                                        axes = FALSE)
+                                box()
+                                axis(1, labels = Uvals, at = 1:7, las=1)
+                                axis(2, labels = round(sigVals, digits = 2), at = 1:7, las=1)
+                                if(r == 1){
+                                        mtext(Scenarios[i], side = 3, line = 0.5)
+                                }
+                                if(i == 1){
+                                        mtext(RowLabels[r], side = 2, line = 4)
+                                }
+                        }
+                        # Add the color key
+                        colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
+                }
+                mtext("U", side = 1, line = 1.5, outer = TRUE)
+                mtext(expression(sigma), side = 2, line = 1.25, outer = TRUE)
+dev.off()
 
