@@ -74,7 +74,7 @@ pdf(file = "ResultFigures/FigureS1.pdf", width = 5, height = 6, onefile = FALSE,
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
         axis(side = 2, at = seq(0.5, 3.5, by = 0.125), tcl = -0.25, labels = FALSE)
-        mtext("Initial genetic diversity", side = 2, line = 3)
+        mtext("Initial genetic variance", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = FigS1Data[[i]]$MeanGen, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
                 segments(x0 = xLocs[i,], y0 = FigS1Data[[i]]$LwrGen, x1 = xLocs[i,], y1 = FigS1Data[[i]]$UprGen,

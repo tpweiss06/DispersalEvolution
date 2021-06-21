@@ -25,7 +25,7 @@
 
 
 # Set the working directory and load in the result data
-setwd("~/Desktop/Wyoming/DispersalEvolution/GitRepo/")
+setwd("~/Desktop/GitHubRepos/DispersalEvolution/")
 Results <- read.csv("SimsWithResults.csv")
 
 # Set an appropriate color scheme and the scenario names
@@ -111,7 +111,7 @@ pdf(file = "ResultFigures/Figure1.pdf", width = 5, height = 6, onefile = FALSE, 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
         axis(side = 2, at = seq(-3, 0, by = 0.1), tcl = -0.25, labels = FALSE)
-        mtext("Change in genetic diversity", side = 2, line = 3)
+        mtext("Change in genetic variance", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig2Data[[i]]$MeanGenExp, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
                 segments(x0 = xLocs[i,], y0 = Fig2Data[[i]]$LwrGenExp, x1 = xLocs[i,], y1 = Fig2Data[[i]]$UprGenExp,
@@ -147,7 +147,7 @@ pdf(file = "ResultFigures/Figure2.pdf", width = 5, height = 6, onefile = FALSE, 
              xlab = "", las = 1, xaxt = "n")
         axis(side = 1, at = LseqLocs, labels = Lseq)
         axis(side = 2, at = seq(-6, 0, by = 0.25), tcl = -0.25, labels = FALSE)
-        mtext("Change in genetic diversity", side = 2, line = 3)
+        mtext("Change in genetic variance", side = 2, line = 3)
         for(i in 1:5){
                 points(x = xLocs[i,], y = Fig2Data[[i]]$MeanGenShift, pch = 20 + i, col = ScenCols[i], bg = ScenCols[i])
                 segments(x0 = xLocs[i,], y0 = Fig2Data[[i]]$LwrGenShift, x1 = xLocs[i,], y1 = Fig2Data[[i]]$UprGenShift,
