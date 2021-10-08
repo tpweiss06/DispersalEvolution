@@ -6,6 +6,8 @@
 #    structure of the code follows the same logical flow as the simulations used
 #    for the main results reported in the manuscript.
 
+library(here)
+
 # First make the master simulation data frame, using the parameter combinations
 #    to be explored
 L <- 4
@@ -33,8 +35,8 @@ AllSimulations <- data.frame(SimID = 1:TotalSims, L = rep(L, TotalSims),
                              omega = rep(NA, TotalSims), complete = rep(0, TotalSims),
                              R = rep(NA, TotalSims), Kmax = rep(NA, TotalSims))
 k <- 1
-for(u in 1:length(Useq)){
-     for(s in 1:length(sigmaSeq)){
+for(u in 1:length(Rseq)){
+     for(s in 1:length(KmaxSeq)){
           for(i in 1:length(Haploid)){
                AllSimulations$R[k:(k+NumSims-1)] <- Rseq[u]
                AllSimulations$Kmax[k:(k+NumSims-1)] <- KmaxSeq[s]
@@ -46,7 +48,7 @@ for(u in 1:length(Useq)){
      }
 }
 
-write.csv(AllSimulations, file = "~/Desktop/Wyoming/DispersalEvolution/GitRepo/DemoSensSimulations.csv", 
+write.csv(AllSimulations, file = here("DemoSensSimulations.csv"), 
           row.names = FALSE, quote = FALSE)
 
 
