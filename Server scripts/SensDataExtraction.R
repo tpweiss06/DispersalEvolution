@@ -17,7 +17,7 @@ source("/project/rangeecoevomodels/cweissle/DispEv/SimFunctions.R")
 
 # Load in the matrix with all the simulation information and add columns to hold
 #    the needed data
-AllSims <- read.csv("SensSimulations.csv")
+AllSims <- read.csv("DemoSensSimulations.csv")
 distance_1 <- rep(NA, nrow(AllSims))
 DeltaPhenExp_1 <- rep(NA, nrow(AllSims))
 DeltaGenExp_1 <- rep(NA, nrow(AllSims))
@@ -34,7 +34,7 @@ AllSims <- cbind(AllSims, distance_1, distance_2, DeltaPhenExp_1, DeltaPhenExp_2
 # Define the percentage of available patches constituting the range edge and use
 #    that percentage to calculate the equivalent number of patches
 EdgeProp <- 0.25
-source(paste("/project/rangeecoevomodels/cweissle/DispEv/SensSims", AllSims$SimID[1], "parameters.R", sep = "/"))
+source(paste("/project/rangeecoevomodels/cweissle/DispEv/DemoSensSims", AllSims$SimID[1], "parameters.R", sep = "/"))
 xSeq <- -100:100
 Kvals <- log(R) / PatchAlphas(OccPatches = xSeq, NumPatches = length(xSeq), CurBeta = BetaInit,
                               tau = tau, gamma = gamma, Kmax = Kmax, R = R)
@@ -49,7 +49,7 @@ Edge <- round(EdgeProp * RangeExtent)
 # Create the function to be run on the cluster
 SimFunc <- function(i){
      # Load in the necessary data objects for each simulation
-     CurSim <- paste("/project/rangeecoevomodels/cweissle/DispEv/SensSims",
+     CurSim <- paste("/project/rangeecoevomodels/cweissle/DispEv/DemoSensSims",
                      AllSims$SimID[i], sep = "/")
      InitialPopMat <- read.csv(paste(CurSim, "EquilibriumPopMat.csv", sep = "/"))
      ExpandPopMat <- read.csv(paste(CurSim, "ExpansionEdgePopMat.csv", sep = "/"))
@@ -149,5 +149,5 @@ for(i in 1:nrow(AllSims)){
     AllSims$DeltaGenShift[i] <- Sims[[i]]$DeltaGenShift
     AllSims$ExtRisk[i] <- Sims[[i]]$ExtRisk
 }
-write.csv(AllSims, file = "/project/rangeecoevomodels/cweissle/DispEv/SensSimsWithResults.csv", 
+write.csv(AllSims, file = "/project/rangeecoevomodels/cweissle/DispEv/DemoSensSimsWithResults.csv", 
           row.names = FALSE, quote = FALSE)

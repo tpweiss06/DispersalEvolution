@@ -21,7 +21,7 @@ omega <- c(0, 0, 0, 0.5, 1)
 #    analysis
 R_star <- 2
 Kmax_star <- 100
-Rseq <- c(1, 1.25, 1.75, 2, 2.5, 3, 4) #The minimum here needs to be at least replacement
+Rseq <- c(1.1, 1.25, 1.75, 2, 2.5, 3, 4) #The minimum here needs to be at least replacement
 KmaxSeq <- c(0.25*Kmax_star, 0.5*Kmax_star, 0.75*Kmax_star, Kmax_star, 1.25*Kmax_star, 2*Kmax_star, 4*Kmax_star)
 
 # Calculate the number of parameter combinations to use
