@@ -52,7 +52,7 @@ SimFunc <- function(i){
 }
 
 # Create a vector of parameter index values for the parallel computation
-SimVec <- which(AllSims$Haploid == TRUE | AllSims$omega == 1)
+SimVec <- which((AllSims$Haploid == TRUE & AllSims$L > 1) | AllSims$omega == 1)
 
 # Create the cluster and run the simulations
 cl <- makeCluster(TotalTasks - 1, type = "MPI")

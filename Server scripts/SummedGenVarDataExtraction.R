@@ -55,6 +55,11 @@ SimFunc <- function(i){
      # First determine if the population went extinct during the range shift
      ExtRiskEvol <- ifelse(nrow(ShiftPopMat) == 0, 1, 0)
      
+     # Define the edge populations to use for these calculations
+     InitEdgePop <- which(InitialPopMat$x0 >= max(InitialPopMat$x0) - Edge)
+     ExpEdgePop_1 <- which(ExpandPopMat$x0 >= max(ExpandPopMat$x0) - Edge)
+     ExpEdgePop_2 <- which(ExpandPopMat$x0 <= min(ExpandPopMat$x0) + Edge)
+     
      # Calculate the genetic variance for the edge populations in the initial (equilibrium)
      #    population, expansion population, and the range shift population (only if extant)
      # Initial
@@ -67,6 +72,7 @@ SimFunc <- function(i){
      ExpGenVar_2 <- var(ExpLociSums_2)
      # Shift
      if(ExtRiskEvol == 0){
+          ShiftEdgePop <- which(ShiftPopMat$x0 >= max(ShiftPopMat$x0) - Edge)
           ShiftLociSums <- rowSums(ShiftPopMat[ShiftEdgePop,PopIndices$DispCols])
           ShiftGenVar <- var(ShiftLociSums)
      }
@@ -86,7 +92,7 @@ SimFunc <- function(i){
 }
 
 # Create a vector of parameter index values for the parallel computation
-SimVec <- which(AllSims$Haploid == TRUE | AllSims$omega == 1)
+SimVec <- which((AllSims$Haploid == TRUE & AllSims$L > 1) | AllSims$omega == 1)
 
 # Create the cluster and run the simulations
 cl <- makeCluster(TotalTasks - 1, type = "MPI")
