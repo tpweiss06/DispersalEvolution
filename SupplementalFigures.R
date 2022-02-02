@@ -598,7 +598,7 @@ pdf(file = "ResultFigures/FigureS10.pdf", width = 10, height = 6, onefile = FALS
           colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
      }
      mtext(expression(rho), side = 1, line = 1.5, outer = TRUE)
-     mtext(expression(paste("d"["max"], sep = "")), side = 2, line = 1.25, outer = TRUE)
+     mtext(expression(hat(d)), side = 2, line = 1.25, outer = TRUE)
 dev.off()
 
 ############################ Fig. S11; IQR widths in unbounded range expansions
@@ -637,7 +637,7 @@ pdf(file = "ResultFigures/FigureS11.pdf", width = 10, height = 6, onefile = FALS
           colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
      }
      mtext(expression(rho), side = 1, line = 1.5, outer = TRUE)
-     mtext(expression(paste("d"["max"], sep = "")), side = 2, line = 1.25, outer = TRUE)
+     mtext(expression(hat(d)), side = 2, line = 1.25, outer = TRUE)
 dev.off()
 
 ########################################## Fig. S12; Mean changes in range shifts
@@ -676,7 +676,7 @@ pdf(file = "ResultFigures/FigureS12.pdf", width = 10, height = 6, onefile = FALS
           colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
      }
      mtext(expression(rho), side = 1, line = 1.5, outer = TRUE)
-     mtext(expression(paste("d"["max"], sep = "")), side = 2, line = 1.25, outer = TRUE)
+     mtext(expression(hat(d)), side = 2, line = 1.25, outer = TRUE)
 dev.off()
 
 ########################################## Fig. S13; IQR widths in range shifts
@@ -720,7 +720,7 @@ pdf(file = "ResultFigures/FigureS13.pdf", width = 10, height = 4, onefile = FALS
           colkey(col = ColVals[r,2,], clim = ColRanges[r,], cex.axis = 1, width = 15)
      }
      mtext(expression(rho), side = 1, line = 1.5, outer = TRUE)
-     mtext(expression(paste("d"["max"], sep = "")), side = 2, line = 1.25, outer = TRUE)
+     mtext(expression(hat(d)), side = 2, line = 1.25, outer = TRUE)
 dev.off()
 
 
